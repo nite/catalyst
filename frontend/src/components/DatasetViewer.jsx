@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiRefreshCw } from 'react-icons/fi'
 import { fetchDataset, fetchDatasetData, analyzeDataset, fetchDatasets } from '../utils/api'
 import Chart from './Chart'
 import DataFilters from './DataFilters'
+import { useHeader } from './HeaderContext'
 
 export default function DatasetViewer() {
   const { datasetId } = useParams()
@@ -15,11 +16,48 @@ export default function DatasetViewer() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({})
-  const [selectedChartIndex, setSelectedChartIndex] = useState(0)
+  const [chartType, setChartType] = useState('bar')
+  const [xAxis, setXAxis] = useState('')
+  const [yAxis, setYAxis] = useState('')
+  const [categoryAxis, setCategoryAxis] = useState('')
+  const [valueAxis, setValueAxis] = useState('')
+  const [locationAxis, setLocationAxis] = useState('')
+  const [columnSort, setColumnSort] = useState('default')
+  const { setHeader } = useHeader()
+
+  const loadDataset = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setFilters({})
+
+      // Fetch dataset metadata
+      const datasetInfo = await fetchDataset(datasetId)
+      setDataset(datasetInfo)
+
+      // Analyze dataset to get chart recommendations
+      const analysisData = await analyzeDataset(datasetId)
+      setAnalysis(analysisData)
+
+      if (analysisData?.recommended_chart) {
+        const recommended = analysisData.recommended_chart
+        setChartType(recommended.chart_type || 'bar')
+        setXAxis(recommended.x_axis || '')
+        setYAxis(recommended.y_axis || '')
+        setCategoryAxis(recommended.category || '')
+        setValueAxis(recommended.value || '')
+        setLocationAxis(recommended.location || '')
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [datasetId])
 
   useEffect(() => {
     loadDataset()
-  }, [datasetId])
+  }, [loadDataset])
 
   useEffect(() => {
     const loadDatasetList = async () => {
@@ -34,35 +72,7 @@ export default function DatasetViewer() {
     loadDatasetList()
   }, [])
 
-  useEffect(() => {
-    if (dataset) {
-      loadData()
-    }
-  }, [dataset, filters])
-
-  const loadDataset = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      setFilters({})
-
-      // Fetch dataset metadata
-      const datasetInfo = await fetchDataset(datasetId)
-      setDataset(datasetInfo)
-
-      // Analyze dataset to get chart recommendations
-      const analysisData = await analyzeDataset(datasetId)
-      setAnalysis(analysisData)
-
-      setSelectedChartIndex(0)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const params = { limit: 500 }
       const filterPayload = {}
@@ -94,24 +104,330 @@ export default function DatasetViewer() {
     } catch (err) {
       console.error('Error loading data:', err)
     }
-  }
+  }, [dataset, datasetId, filters])
 
-  const handleFilterChange = (newFilters) => {
+  useEffect(() => {
+    if (dataset) {
+      loadData()
+    }
+  }, [dataset, loadData])
+
+  const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters)
-  }
+  }, [])
 
-  const handleChartChange = (value) => {
-    setSelectedChartIndex(Number(value))
-  }
+  const handleChartTypeChange = useCallback((value) => {
+    setChartType(value)
+  }, [])
 
-  const handleDatasetChange = (value) => {
+  const handleDatasetChange = useCallback((value) => {
     if (value && value !== datasetId) {
       navigate(`/datasets/${value}`)
     }
-  }
+  }, [datasetId, navigate])
 
-  const chartOptions = analysis?.chart_suggestions || []
-  const selectedChart = chartOptions[selectedChartIndex]
+  const columns = analysis?.columns || []
+
+  const columnData = useMemo(() => {
+    const columns = analysis?.columns || []
+    const sorter = (values) => {
+      if (columnSort === 'asc') {
+        return [...values].sort((a, b) => a.localeCompare(b))
+      }
+      if (columnSort === 'desc') {
+        return [...values].sort((a, b) => b.localeCompare(a))
+      }
+      return values
+    }
+
+    return {
+      allColumns: sorter(columns.map(col => col.name)),
+      numericColumns: sorter(columns.filter(col => col.type === 'numerical').map(col => col.name)),
+      categoricalColumns: sorter(columns.filter(col => col.type === 'categorical').map(col => col.name)),
+      temporalColumns: sorter(columns.filter(col => col.type === 'temporal').map(col => col.name)),
+      geographicColumns: sorter(columns.filter(col => col.is_geographic).map(col => col.name))
+    }
+  }, [analysis, columnSort])
+
+  const {
+    allColumns,
+    numericColumns,
+    categoricalColumns,
+    temporalColumns,
+    geographicColumns
+  } = columnData
+
+  useEffect(() => {
+    if (!analysis?.columns || analysis.columns.length === 0) {
+      return
+    }
+
+    setXAxis((prev) => prev || temporalColumns[0] || allColumns[0] || '')
+    setYAxis((prev) => prev || numericColumns[0] || allColumns[0] || '')
+    setCategoryAxis((prev) => prev || categoricalColumns[0] || allColumns[0] || '')
+    setValueAxis((prev) => prev || numericColumns[0] || allColumns[0] || '')
+    setLocationAxis((prev) => prev || geographicColumns[0] || categoricalColumns[0] || allColumns[0] || '')
+  }, [analysis, allColumns, categoricalColumns, geographicColumns, numericColumns, temporalColumns])
+
+  useEffect(() => {
+    if (!analysis?.columns || analysis.columns.length === 0) {
+      return
+    }
+
+    if (['line', 'bar'].includes(chartType)) {
+      const preferredX = numericColumns[0] || allColumns[0] || ''
+      const preferredY = temporalColumns[0] || allColumns[0] || ''
+      if (preferredX && !numericColumns.includes(xAxis)) {
+        setXAxis(preferredX)
+      }
+      if (preferredY && !temporalColumns.includes(yAxis)) {
+        setYAxis(preferredY)
+      }
+      return
+    }
+
+    if (chartType === 'scatter') {
+      const scatterX = numericColumns[0] || allColumns[0] || ''
+      const scatterY = numericColumns[1] || numericColumns[0] || allColumns[0] || ''
+      if (scatterX) {
+        setXAxis(scatterX)
+      }
+      if (scatterY) {
+        setYAxis(scatterY)
+      }
+    }
+  }, [allColumns, analysis, chartType, numericColumns, temporalColumns, xAxis, yAxis])
+
+  const selectedChart = useMemo(() => {
+    if (!chartType) return null
+
+    if (chartType === 'treemap') {
+      if (!categoryAxis || !valueAxis) return null
+      return {
+        chart_type: 'treemap',
+        title: `${valueAxis} by ${categoryAxis}`,
+        category: categoryAxis,
+        value: valueAxis
+      }
+    }
+
+    if (chartType === 'map') {
+      if (!locationAxis || !valueAxis) return null
+      return {
+        chart_type: 'map',
+        title: `${valueAxis} by ${locationAxis}`,
+        location: locationAxis,
+        value: valueAxis
+      }
+    }
+
+    if (!xAxis || !yAxis) return null
+    return {
+      chart_type: chartType,
+      title: `${yAxis} by ${xAxis}`,
+      x_axis: xAxis,
+      y_axis: yAxis
+    }
+  }, [categoryAxis, chartType, locationAxis, valueAxis, xAxis, yAxis])
+
+  const headerContent = useMemo(() => {
+    if (!dataset) return null
+
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap">
+        <Link
+          to="/datasets"
+          className="inline-flex items-center text-xs text-primary-600 hover:text-primary-700"
+        >
+          <FiArrowLeft className="mr-1" />
+          Back
+        </Link>
+        <span data-testid="dataset-title" className="text-xs font-semibold text-gray-900">
+          {dataset.name}
+        </span>
+        <span className="text-xs text-gray-500">{dataset.description}</span>
+        <span className="text-xs text-gray-500">{dataset.provider}</span>
+        <span className="text-xs text-gray-500">{dataset.category}</span>
+        <button
+          type="button"
+          onClick={loadDataset}
+          className="text-xs px-2 py-1 border border-gray-200 rounded-full hover:bg-white"
+        >
+          <FiRefreshCw className="inline mr-1" />
+          Refresh
+        </button>
+        <div className="h-4 w-px bg-gray-200" />
+        <div className="flex items-center gap-1 min-w-[150px]">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Dataset</span>
+          <select
+            data-testid="dataset-select"
+            value={datasetId}
+            onChange={(e) => handleDatasetChange(e.target.value)}
+            className="input-field-compact"
+          >
+            {datasets.length === 0 && dataset?.name && (
+              <option value={datasetId}>{dataset.name}</option>
+            )}
+            {datasets.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-1 min-w-[120px]">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Chart</span>
+          <select
+            data-testid="chart-type-select"
+            value={chartType}
+            onChange={(e) => handleChartTypeChange(e.target.value)}
+            className="input-field-compact"
+            disabled={columns.length === 0}
+          >
+            <option value="line">Line</option>
+            <option value="bar">Bar</option>
+            <option value="scatter">Scatter</option>
+            <option value="treemap">Treemap</option>
+            <option value="map">Map</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-1 min-w-[120px]">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Sort</span>
+          <select
+            value={columnSort}
+            onChange={(e) => setColumnSort(e.target.value)}
+            className="input-field-compact"
+          >
+            <option value="default">Default</option>
+            <option value="asc">A-Z</option>
+            <option value="desc">Z-A</option>
+          </select>
+        </div>
+        {['line', 'bar', 'scatter'].includes(chartType) && (
+          <div className="flex items-center gap-1 min-w-[140px]">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">X</span>
+            <select
+              data-testid="x-axis-select"
+              value={xAxis}
+              onChange={(e) => setXAxis(e.target.value)}
+              className="input-field-compact"
+            >
+              {allColumns.map((col) => (
+                <option key={col} value={col}>
+                  {col}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {['line', 'bar', 'scatter'].includes(chartType) && (
+          <div className="flex items-center gap-1 min-w-[140px]">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Y</span>
+            <select
+              data-testid="y-axis-select"
+              value={yAxis}
+              onChange={(e) => setYAxis(e.target.value)}
+              className="input-field-compact"
+            >
+              {numericColumns.length === 0 && allColumns.map((col) => (
+                <option key={col} value={col}>
+                  {col}
+                </option>
+              ))}
+              {numericColumns.map((col) => (
+                <option key={col} value={col}>
+                  {col}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {chartType === 'treemap' && (
+          <>
+            <div className="flex items-center gap-1 min-w-[150px]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Category</span>
+              <select
+                data-testid="category-select"
+                value={categoryAxis}
+                onChange={(e) => setCategoryAxis(e.target.value)}
+                className="input-field-compact"
+              >
+                {(categoricalColumns.length ? categoricalColumns : allColumns).map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1 min-w-[130px]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Value</span>
+              <select
+                data-testid="value-select"
+                value={valueAxis}
+                onChange={(e) => setValueAxis(e.target.value)}
+                className="input-field-compact"
+              >
+                {(numericColumns.length ? numericColumns : allColumns).map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+        {chartType === 'map' && (
+          <>
+            <div className="flex items-center gap-1 min-w-[150px]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Location</span>
+              <select
+                data-testid="location-select"
+                value={locationAxis}
+                onChange={(e) => setLocationAxis(e.target.value)}
+                className="input-field-compact"
+              >
+                {(geographicColumns.length ? geographicColumns : allColumns).map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1 min-w-[130px]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Value</span>
+              <select
+                data-testid="map-value-select"
+                value={valueAxis}
+                onChange={(e) => setValueAxis(e.target.value)}
+                className="input-field-compact"
+              >
+                {(numericColumns.length ? numericColumns : allColumns).map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+        </div>
+        {analysis?.statistics && (
+          <div className="flex items-center gap-3 text-[11px] text-gray-500">
+            <span>Total: {analysis.statistics.total_rows?.toLocaleString()}</span>
+            <span>Cols: {analysis.statistics.total_columns}</span>
+            <span>Time: {analysis.statistics.has_time_series ? 'Yes' : 'No'}</span>
+            <span>Geo: {analysis.statistics.has_geographic ? 'Yes' : 'No'}</span>
+          </div>
+        )}
+      </div>
+    )
+  }, [allColumns, analysis, categoricalColumns, chartType, columnSort, dataset, datasetId, datasets, geographicColumns, handleDatasetChange, handleChartTypeChange, loadDataset, locationAxis, numericColumns, valueAxis, xAxis, yAxis])
+
+  useEffect(() => {
+    setHeader(headerContent)
+    return () => setHeader(null)
+  }, [headerContent, setHeader])
 
   if (loading) {
     return (
@@ -141,114 +457,8 @@ export default function DatasetViewer() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <section className="bg-white/90 rounded-[28px] border border-white/70 shadow-[0_30px_80px_-60px_rgba(15,118,110,0.65)] p-6 animate-rise">
-        <div className="flex flex-col gap-4">
-          <Link to="/datasets" className="inline-flex items-center text-primary-600 hover:text-primary-700">
-            <FiArrowLeft className="mr-2" />
-            Back to Datasets
-          </Link>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 font-display">
-                {dataset?.name}
-              </h1>
-              <p className="text-gray-600 max-w-2xl">{dataset?.description}</p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full">
-                  {dataset?.provider}
-                </span>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-                  {dataset?.category}
-                </span>
-                <button
-                  type="button"
-                  onClick={loadDataset}
-                  className="px-3 py-1 bg-white/80 text-gray-700 text-sm rounded-full border border-gray-200 hover:bg-white transition"
-                >
-                  <FiRefreshCw className="inline mr-1" />
-                  Refresh
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-[420px]">
-              <div>
-                <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
-                  Dataset
-                </label>
-                <select
-                  data-testid="dataset-select"
-                  value={datasetId}
-                  onChange={(e) => handleDatasetChange(e.target.value)}
-                  className="input-field text-sm"
-                >
-                  {datasets.length === 0 && dataset?.name && (
-                    <option value={datasetId}>{dataset.name}</option>
-                  )}
-                  {datasets.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
-                  Chart
-                </label>
-                <select
-                  data-testid="chart-select"
-                  value={selectedChartIndex}
-                  onChange={(e) => handleChartChange(e.target.value)}
-                  className="input-field text-sm"
-                  disabled={chartOptions.length === 0}
-                >
-                  {chartOptions.map((chart, index) => (
-                    <option key={`${chart.chart_type}-${index}`} value={index}>
-                      {chart.title || `${chart.chart_type} chart`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Dataset Statistics */}
-        {analysis?.statistics && (
-          <div className="mt-6 overflow-x-auto">
-            <div className="flex gap-4 min-w-[640px] md:min-w-0 md:grid md:grid-cols-4">
-              <div className="card">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Total Rows</p>
-                <p className="text-2xl font-bold text-gray-900 font-display mt-2">
-                  {analysis.statistics.total_rows?.toLocaleString()}
-                </p>
-              </div>
-              <div className="card">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Columns</p>
-                <p className="text-2xl font-bold text-gray-900 font-display mt-2">
-                  {analysis.statistics.total_columns}
-                </p>
-              </div>
-              <div className="card">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Time Series</p>
-                <p className="text-2xl font-bold text-gray-900 font-display mt-2">
-                  {analysis.statistics.has_time_series ? 'Yes' : 'No'}
-                </p>
-              </div>
-              <div className="card">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Geographic</p>
-                <p className="text-2xl font-bold text-gray-900 font-display mt-2">
-                  {analysis.statistics.has_geographic ? 'Yes' : 'No'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-6">
+    <div className="flex flex-col gap-2 h-full overflow-hidden">
+      <section className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)] gap-2 flex-1 min-h-0 overflow-hidden">
         {/* Filters Sidebar */}
         <div className="lg:sticky lg:top-24 h-fit">
           <DataFilters
@@ -259,33 +469,31 @@ export default function DatasetViewer() {
         </div>
 
         {/* Chart Area */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-2 min-h-0 overflow-y-auto">
           {/* Chart Display */}
           {data && selectedChart && (
-            <div className="bg-white/90 rounded-[24px] shadow-[0_30px_80px_-60px_rgba(15,118,110,0.6)] p-6 border border-white/70 animate-fade">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900 font-display">
-                  {selectedChart.title}
-                </h3>
+            <div data-testid="chart-section" className="border-b border-gray-200 pb-2 flex-1 min-h-0 overflow-hidden">
+              <div className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
+                {selectedChart.title}
               </div>
-              <Chart
-                data={data.data}
-                chartConfig={selectedChart}
-                analysis={analysis}
-              />
+              <div className="h-[260px] md:h-[320px] xl:h-[380px]">
+                <Chart
+                  data={data.data}
+                  chartConfig={selectedChart}
+                  analysis={analysis}
+                />
+              </div>
             </div>
           )}
 
           {/* Data Table Preview */}
           {data && data.data && data.data.length > 0 && (
-            <div className="bg-white/90 rounded-[24px] shadow-[0_30px_80px_-60px_rgba(15,118,110,0.5)] p-6 border border-white/70 animate-fade">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900 font-display">
-                  Data Preview
-                </h3>
-                <p className="text-sm text-gray-500">{data.total} rows</p>
+            <div className="border-b border-gray-200 pb-2 max-h-[260px]">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
+                <span>Data Preview</span>
+                <span>{data.total} rows</span>
               </div>
-              <div className="overflow-auto max-h-[320px]">
+              <div className="overflow-auto max-h-[220px]">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>

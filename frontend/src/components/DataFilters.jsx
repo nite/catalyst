@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { FiSliders, FiX } from 'react-icons/fi'
+import { FiSliders, FiX, FiShuffle } from 'react-icons/fi'
 
 export default function DataFilters({ filters, currentFilters, onChange }) {
   const [localFilters, setLocalFilters] = useState(currentFilters)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [sortMode, setSortMode] = useState('default')
 
   useEffect(() => {
     setLocalFilters(currentFilters)
@@ -17,11 +18,6 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
       }
       return newFilters
     })
-  }
-
-  const applyFilters = () => {
-    onChange(localFilters)
-    setShowMobileFilters(false)
   }
 
   const resetFilters = () => {
@@ -137,11 +133,21 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
 
   if (!filters || filters.length === 0) {
     return (
-      <div className="bg-white/85 rounded-2xl shadow-[0_20px_60px_-45px_rgba(15,118,110,0.5)] p-4 border border-white/70">
+      <div className="border border-gray-200 p-2 text-xs text-gray-500">
         <p className="text-sm text-gray-600">No filters available</p>
       </div>
     )
   }
+
+  const sortedFilters = [...filters].sort((a, b) => {
+    if (sortMode === 'asc') {
+      return a.column.localeCompare(b.column)
+    }
+    if (sortMode === 'desc') {
+      return b.column.localeCompare(a.column)
+    }
+    return 0
+  })
 
   return (
     <>
@@ -164,13 +170,13 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
       {/* Filter Panel */}
       <div
         data-testid="filters-panel"
-        className={`bg-white/95 rounded-2xl shadow-[0_25px_70px_-50px_rgba(15,118,110,0.7)] p-4 border border-white/70 ${showMobileFilters
-            ? 'fixed z-50 left-4 right-4 top-24 max-h-[70vh] overflow-y-auto'
-            : 'hidden lg:block'
+        className={`border border-gray-200 p-2 ${showMobileFilters
+            ? 'fixed z-50 left-2 right-2 top-20 max-h-[70vh] overflow-y-auto bg-white'
+            : 'hidden lg:block max-h-[calc(100vh-8rem)] overflow-y-auto'
           }`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 font-display flex items-center">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center">
             <FiSliders className="mr-2" />
             Filters
           </h3>
@@ -184,14 +190,27 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
           )}
         </div>
 
+        <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+          <FiShuffle className="h-4 w-4" />
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value)}
+            className="input-field text-xs h-8 px-2"
+          >
+            <option value="default">Default</option>
+            <option value="asc">A-Z</option>
+            <option value="desc">Z-A</option>
+          </select>
+        </div>
+
         {activeFilters.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex gap-2 overflow-x-auto whitespace-nowrap mb-2">
             {activeFilters.map(([key, value]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => removeFilter(key)}
-                className="text-xs px-3 py-1 rounded-full bg-primary-100 text-primary-700 hover:bg-primary-200 transition"
+                className="text-xs px-2 py-1 border border-primary-200 text-primary-700 hover:bg-primary-50 transition"
               >
                 {key.replace(/_/g, ' ')}: {String(value)}
               </button>
@@ -199,17 +218,11 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
           </div>
         )}
 
-        <div className="space-y-4">
-          {filters.map(filter => renderFilter(filter))}
+        <div className="space-y-3">
+          {sortedFilters.map(filter => renderFilter(filter))}
         </div>
 
-        <div className="space-y-2 mt-6">
-          <button
-            onClick={applyFilters}
-            className="w-full btn-primary"
-          >
-            Apply Filters
-          </button>
+        <div className="mt-4">
           <button
             onClick={resetFilters}
             className="w-full btn-secondary"

@@ -5,13 +5,13 @@ import {
   PointElement,
   LineElement,
   BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
   Filler
 } from 'chart.js'
-import { Line, Bar, Pie, Scatter } from 'react-chartjs-2'
+import { Line, Bar, Scatter, Chart as ReactChart } from 'react-chartjs-2'
+import { TreemapController, TreemapElement } from 'chartjs-chart-treemap'
 import { useMemo } from 'react'
 
 // Register ChartJS components
@@ -21,11 +21,12 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  TreemapController,
+  TreemapElement
 )
 
 export default function Chart({ data, chartConfig, analysis }) {
@@ -62,36 +63,32 @@ export default function Chart({ data, chartConfig, analysis }) {
       }
     }
 
-    if (chart_type === 'pie') {
-      // For pie charts - aggregate by category
-      const aggregated = {}
-      data.forEach(row => {
-        const cat = row[category]
-        const val = parseFloat(row[value]) || 0
-        aggregated[cat] = (aggregated[cat] || 0) + val
-      })
-
-      const labels = Object.keys(aggregated).slice(0, 10)
-      const values = Object.values(aggregated).slice(0, 10)
+    if (chart_type === 'treemap') {
+      const palette = [
+        '#14b8a6',
+        '#06b6d4',
+        '#3b82f6',
+        '#6366f1',
+        '#8b5cf6',
+        '#ec4899',
+        '#f97316',
+        '#eab308',
+        '#22c55e'
+      ]
 
       return {
-        labels,
         datasets: [
           {
-            data: values,
-            backgroundColor: [
-              'rgba(14, 165, 233, 0.8)',
-              'rgba(59, 130, 246, 0.8)',
-              'rgba(99, 102, 241, 0.8)',
-              'rgba(139, 92, 246, 0.8)',
-              'rgba(168, 85, 247, 0.8)',
-              'rgba(236, 72, 153, 0.8)',
-              'rgba(239, 68, 68, 0.8)',
-              'rgba(249, 115, 22, 0.8)',
-              'rgba(245, 158, 11, 0.8)',
-              'rgba(34, 197, 94, 0.8)'
-            ],
-            borderWidth: 1
+            tree: data,
+            key: value,
+            groups: [category],
+            spacing: 1,
+            borderColor: 'rgba(255, 255, 255, 0.9)',
+            borderWidth: 1,
+            backgroundColor: (ctx) => {
+              const index = ctx?.dataIndex ?? 0
+              return palette[index % palette.length]
+            }
           }
         ]
       }
@@ -165,7 +162,7 @@ export default function Chart({ data, chartConfig, analysis }) {
         intersect: false
       }
     },
-    scales: chartConfig.chart_type === 'pie' ? undefined : {
+    scales: ['treemap', 'pie'].includes(chartConfig.chart_type) ? undefined : {
       x: {
         grid: {
           display: false
@@ -206,13 +203,17 @@ export default function Chart({ data, chartConfig, analysis }) {
   const ChartComponent = {
     line: Line,
     bar: Bar,
-    pie: Pie,
-    scatter: Scatter
+    scatter: Scatter,
+    treemap: ReactChart
   }[chartConfig.chart_type] || Bar
 
   return (
-    <div className="w-full h-[320px] md:h-[420px] xl:h-[520px]" data-testid="chart-canvas">
-      <ChartComponent data={chartData} options={options} />
+    <div className="w-full h-full" data-testid="chart-canvas">
+      {chartConfig.chart_type === 'treemap' ? (
+        <ChartComponent type="treemap" data={chartData} options={options} />
+      ) : (
+        <ChartComponent data={chartData} options={options} />
+      )}
     </div>
   )
 }
