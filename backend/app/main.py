@@ -3,10 +3,13 @@ Catalyst - Mobile-First Data Visualization Platform
 FastAPI Backend Server
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from typing import Optional, List
 import logging
+from pathlib import Path
 
 from .datasets import get_all_datasets, get_dataset_by_id, fetch_dataset_data
 from .analyzer import analyze_dataset
@@ -21,6 +24,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
+api_router = APIRouter(prefix="/api")
+
 # CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -31,9 +36,9 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@api_router.get("/")
 async def root():
-    """Health check endpoint"""
+    """API status endpoint"""
     return {
         "message": "Catalyst API is running",
         "version": "1.0.0",
@@ -41,7 +46,7 @@ async def root():
     }
 
 
-@app.get("/datasets")
+@api_router.get("/datasets")
 async def list_datasets(
     provider: Optional[str] = None,
     category: Optional[str] = None,
@@ -76,7 +81,7 @@ async def list_datasets(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/datasets/{dataset_id}")
+@api_router.get("/datasets/{dataset_id}")
 async def get_dataset(dataset_id: str):
     """
     Get specific dataset details including metadata and column information
@@ -93,7 +98,7 @@ async def get_dataset(dataset_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/datasets/{dataset_id}/data")
+@api_router.get("/datasets/{dataset_id}/data")
 async def get_dataset_data(
     dataset_id: str,
     limit: int = Query(default=100, ge=1, le=1000),
@@ -129,7 +134,7 @@ async def get_dataset_data(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/datasets/{dataset_id}/analyze")
+@api_router.post("/datasets/{dataset_id}/analyze")
 async def analyze_dataset_endpoint(
     dataset_id: str,
     sample_size: int = Query(default=1000, ge=100, le=10000)
@@ -162,7 +167,40 @@ async def analyze_dataset_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/health")
+@api_router.get("/health")
 async def health_check():
     """Health check endpoint for monitoring"""
     return {"status": "healthy", "service": "catalyst-api"}
+
+
+@app.get("/health")
+async def root_health_check():
+    """Health check endpoint for platform monitoring"""
+    return {"status": "healthy", "service": "catalyst"}
+
+
+app.include_router(api_router)
+
+static_dir = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+index_file = static_dir / "index.html"
+assets_dir = static_dir / "assets"
+
+if assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+
+@app.get("/", include_in_schema=False)
+async def serve_root():
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"message": "Frontend not built"}
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_spa(full_path: str):
+    target = static_dir / full_path
+    if target.exists() and target.is_file():
+        return FileResponse(target)
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"message": "Frontend not built"}
