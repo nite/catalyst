@@ -34,6 +34,7 @@ body {
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -44,6 +45,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -67,15 +69,15 @@ body {
   .btn-primary {
     @apply bg-primary-600 text-white px-4 py-2 rounded-full hover:bg-primary-700 transition-colors duration-200 font-medium shadow-sm shadow-primary-200/60;
   }
-  
+
   .btn-secondary {
     @apply bg-white/80 text-gray-800 px-4 py-2 rounded-full hover:bg-white transition-colors duration-200 font-medium border border-gray-200;
   }
-  
+
   .card {
-    @apply bg-white/90 rounded-2xl shadow-[0_20px_60px_-45px_rgba(15,118,110,0.5)] p-4 border border-white/60 backdrop-blur;
+    @apply bg-white/90 rounded-2xl shadow-[0_20px_60px_-45px_rgba(15, 118, 110, 0.5)] p-4 border border-white/60 backdrop-blur;
   }
-  
+
   .input-field {
     @apply w-full px-4 py-2 border border-gray-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent;
   }

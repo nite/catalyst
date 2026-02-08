@@ -26,19 +26,17 @@ export default function Layout({ children }) {
             <div className="hidden md:flex items-center space-x-8">
               <Link
                 to="/"
-                className={`${
-                  isActive('/') ? 'text-primary-600' : 'text-gray-700'
-                } hover:text-primary-600 transition-colors font-medium`}
+                className={`${isActive('/') ? 'text-primary-600' : 'text-gray-700'
+                  } hover:text-primary-600 transition-colors font-medium`}
               >
                 Home
               </Link>
               <Link
                 to="/datasets"
-                className={`${
-                  isActive('/datasets') || location.pathname.startsWith('/datasets/')
+                className={`${isActive('/datasets') || location.pathname.startsWith('/datasets/')
                     ? 'text-primary-600'
                     : 'text-gray-700'
-                } hover:text-primary-600 transition-colors font-medium`}
+                  } hover:text-primary-600 transition-colors font-medium`}
               >
                 Explore Datasets
               </Link>
@@ -65,20 +63,18 @@ export default function Layout({ children }) {
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block py-2 ${
-                  isActive('/') ? 'text-primary-600' : 'text-gray-700'
-                } hover:text-primary-600 font-medium`}
+                className={`block py-2 ${isActive('/') ? 'text-primary-600' : 'text-gray-700'
+                  } hover:text-primary-600 font-medium`}
               >
                 Home
               </Link>
               <Link
                 to="/datasets"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block py-2 ${
-                  isActive('/datasets') || location.pathname.startsWith('/datasets/')
+                className={`block py-2 ${isActive('/datasets') || location.pathname.startsWith('/datasets/')
                     ? 'text-primary-600'
                     : 'text-gray-700'
-                } hover:text-primary-600 font-medium`}
+                  } hover:text-primary-600 font-medium`}
               >
                 Explore Datasets
               </Link>

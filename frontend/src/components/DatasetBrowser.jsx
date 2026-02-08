@@ -23,7 +23,7 @@ export default function DatasetBrowser() {
       const params = {}
       if (selectedProvider) params.provider = selectedProvider
       if (selectedCategory) params.category = selectedCategory
-      
+
       const data = await fetchDatasets(params)
       setDatasets(data.datasets || [])
     } catch (err) {
@@ -91,11 +91,10 @@ export default function DatasetBrowser() {
               key={category}
               type="button"
               onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
-                selectedCategory === category
+              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${selectedCategory === category
                   ? 'bg-primary-600 text-white'
                   : 'bg-white/70 text-gray-600 hover:bg-primary-100'
-              }`}
+                }`}
             >
               {category}
             </button>
@@ -105,11 +104,10 @@ export default function DatasetBrowser() {
               key={provider}
               type="button"
               onClick={() => setSelectedProvider(provider)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
-                selectedProvider === provider
+              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${selectedProvider === provider
                   ? 'bg-primary-600 text-white'
                   : 'bg-white/70 text-gray-600 hover:bg-primary-100'
-              }`}
+                }`}
             >
               {provider}
             </button>

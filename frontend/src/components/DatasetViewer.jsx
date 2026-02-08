@@ -45,15 +45,15 @@ export default function DatasetViewer() {
       setLoading(true)
       setError(null)
       setFilters({})
-      
+
       // Fetch dataset metadata
       const datasetInfo = await fetchDataset(datasetId)
       setDataset(datasetInfo)
-      
+
       // Analyze dataset to get chart recommendations
       const analysisData = await analyzeDataset(datasetId)
       setAnalysis(analysisData)
-      
+
       setSelectedChartIndex(0)
     } catch (err) {
       setError(err.message)
