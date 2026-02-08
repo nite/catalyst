@@ -247,13 +247,51 @@ npm test
 
 ## 🚀 Deployment to Render
 
+### Quick Deploy Options
+
+**Option 1: Render CLI (Recommended)**
+```bash
+# Install Render CLI
+curl -fsSL https://raw.githubusercontent.com/render-oss/cli/refs/heads/main/bin/install.sh | sh
+
+# Or build from source
+git clone https://github.com/render-oss/cli.git && cd cli
+go build -o render . && sudo mv render /usr/local/bin/
+
+# Authenticate
+render login
+
+# Validate configuration
+render blueprints validate
+
+# Deploy (via dashboard blueprint feature)
+./deploy-cli.sh
+```
+
+**Option 2: API Deployment Script**
+```bash
+# Set your Render API key
+export RENDER_API_KEY='rnd_your_api_key_here'
+
+# Run deployment
+./deploy.sh
+```
+
+**Option 3: Render Dashboard (GUI)**
+- Go to https://dashboard.render.com
+- Click "New" → "Blueprint"
+- Connect GitHub repository: `nite/catalyst`
+- Render auto-detects `render.yaml` and deploys both services
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for complete deployment guide.
+
 ### Prerequisites
 
 - GitHub account with repository
-- Render account (free tier works)
-- GitHub connected to Render
+- Render account (free tier available)
+- Render CLI (for CLI deployment) OR API key (for script deployment)
 
-### Deployment Steps
+### Deployment Steps (Dashboard)
 
 1. **Push code to GitHub:**
    ```bash
