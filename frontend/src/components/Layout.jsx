@@ -9,15 +9,17 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white/70 backdrop-blur sticky top-0 z-50 border-b border-white/60">
+        <nav className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
               <FiBarChart2 className="h-8 w-8 text-primary-600" />
-              <span className="text-2xl font-bold text-gray-900">Catalyst</span>
+              <span className="text-2xl font-bold text-gray-900 font-display tracking-tight">
+                Catalyst
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -86,18 +88,9 @@ export default function Layout({ children }) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4">
         {children}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-gray-600 text-sm">
-            © 2024 Catalyst - Mobile-first data visualization platform
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

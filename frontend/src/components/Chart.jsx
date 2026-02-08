@@ -38,7 +38,11 @@ export default function Chart({ data, chartConfig, analysis }) {
     if (chart_type === 'line' || chart_type === 'bar') {
       // For line and bar charts
       const labels = data.map(row => row[x_axis]).slice(0, 50)
-      const values = data.map(row => row[y_axis]).slice(0, 50)
+      const values = data.map((row, index) => {
+        const rawValue = row[y_axis]
+        const numericValue = Number(rawValue)
+        return Number.isFinite(numericValue) ? numericValue : index
+      }).slice(0, 50)
 
       return {
         labels,
@@ -93,6 +97,33 @@ export default function Chart({ data, chartConfig, analysis }) {
       }
     }
 
+    if (chart_type === 'map') {
+      const aggregated = {}
+      data.forEach(row => {
+        const location = row[chartConfig.location]
+        const val = parseFloat(row[chartConfig.value]) || 0
+        if (location) {
+          aggregated[location] = (aggregated[location] || 0) + val
+        }
+      })
+
+      const labels = Object.keys(aggregated).slice(0, 20)
+      const values = Object.values(aggregated).slice(0, 20)
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: chartConfig.value,
+            data: values,
+            borderColor: 'rgb(20, 184, 166)',
+            backgroundColor: 'rgba(20, 184, 166, 0.6)',
+            borderWidth: 2
+          }
+        ]
+      }
+    }
+
     if (chart_type === 'scatter') {
       // For scatter plots
       const points = data.slice(0, 200).map(row => ({
@@ -116,10 +147,10 @@ export default function Chart({ data, chartConfig, analysis }) {
     return null
   }, [data, chartConfig])
 
+  const isCompact = typeof window !== 'undefined' && window.innerWidth < 768
   const options = {
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: window.innerWidth < 768 ? 1 : 2,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
@@ -143,7 +174,7 @@ export default function Chart({ data, chartConfig, analysis }) {
           maxRotation: 45,
           minRotation: 0,
           autoSkip: true,
-          maxTicksLimit: window.innerWidth < 768 ? 5 : 10
+          maxTicksLimit: isCompact ? 5 : 10
         }
       },
       y: {
@@ -180,7 +211,7 @@ export default function Chart({ data, chartConfig, analysis }) {
   }[chartConfig.chart_type] || Bar
 
   return (
-    <div className="w-full" style={{ maxHeight: '500px' }}>
+    <div className="w-full h-[320px] md:h-[420px] xl:h-[520px]" data-testid="chart-canvas">
       <ChartComponent data={chartData} options={options} />
     </div>
   )
