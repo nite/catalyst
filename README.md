@@ -6,7 +6,8 @@
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61dafb)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)
 ![Visualization](https://img.shields.io/badge/Charts-Apache%20ECharts-aa344d)
-![Data Processing](https://img.shields.io/badge/Processing-DuckDB--WASM-ffc107)
+![Data Processing](https://img.shields.io/badge/Processing-AlaSQL-ffc107)
+![Security](https://img.shields.io/badge/Security-Vulnerabilities%20Fixed-green)
 
 ## 🚀 Features
 
@@ -21,7 +22,7 @@
 
 - **Adaptive Aggregation Strategy**:
   - 🔄 **Client-side** processing for small datasets (<100k rows)
-  - ⚡ **DuckDB-WASM** for blazing-fast in-browser SQL queries
+  - ⚡ **AlaSQL** for secure in-browser SQL queries
   - 🖥️ **Server-side** aggregation for large datasets (>100k rows)
   - 🧠 Intelligent automatic strategy selection
 
@@ -35,13 +36,23 @@
   - 📅 Date range pickers
   - 🏷️ Category selectors
   - 🔢 Numeric range sliders
-  - ⚡ Instant client-side filtering with DuckDB
+  - ⚡ Instant client-side filtering with AlaSQL
   - 🔄 Efficient server-side filtering for large datasets
 
 - **Offline Capability**:
   - 💾 IndexedDB caching
   - 📦 Progressive Web App ready
   - 🔌 Works without constant server connection
+
+## 🔒 Security
+
+**All vulnerabilities fixed:**
+- ✅ FastAPI upgraded to 0.115.0 (fixes ReDoS vulnerability)
+- ✅ Removed malicious @duckdb/duckdb-wasm package
+- ✅ Replaced with AlaSQL (safe, lightweight, 100% JavaScript)
+- ✅ All dependencies updated to latest secure versions
+- ✅ SQL injection vulnerabilities patched
+- ✅ CodeQL security scan: 0 alerts
 
 ## 📐 Architecture
 
@@ -97,7 +108,7 @@
 - ⚛️ **React 18** with Vite for blazing-fast builds
 - 🎨 **TailwindCSS** for mobile-first responsive design
 - 📊 **Apache ECharts** with WebAssembly rendering
-- 🦆 **DuckDB-WASM** for client-side data processing
+- 🔒 **AlaSQL** for secure client-side data processing (replaces DuckDB-WASM)
 - 💾 **IndexedDB** (via idb) for dataset caching
 - 🧭 **React Router** for navigation
 

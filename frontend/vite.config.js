@@ -12,19 +12,11 @@ export default defineConfig({
       }
     }
   },
-  optimizeDeps: {
-    exclude: ['@duckdb/duckdb-wasm'],
-    esbuildOptions: {
-      target: 'es2020'
-    }
-  },
   build: {
-    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks: {
-          'echarts': ['echarts', 'echarts-for-react'],
-          'duckdb': ['@duckdb/duckdb-wasm']
+          'echarts': ['echarts', 'echarts-for-react']
         }
       }
     }

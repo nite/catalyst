@@ -173,7 +173,7 @@ function DatasetVisualization() {
           </div>
           {duckdbReady && (
             <div className="text-green-600 font-semibold">
-              ⚡ DuckDB Active
+              ⚡ AlaSQL Active
             </div>
           )}
         </div>
