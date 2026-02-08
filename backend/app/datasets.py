@@ -282,7 +282,65 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     data = []
     dataset_id = dataset["id"]
     
-    if dataset_id == "global-temperature":
+    # World Bank datasets - generate generic mock data
+    if dataset_id == "world-gdp":
+        countries = ["United States", "China", "Japan", "Germany", "United Kingdom", 
+                     "France", "India", "Italy", "Brazil", "Canada"]
+        num_countries = max(1, min(len(countries), limit // 14 + 1))  # At least 1, adjust for years
+        for country in countries[:num_countries]:
+            for year in range(2010, 2024):
+                data.append({
+                    "country": country,
+                    "country_code": country[:3].upper(),
+                    "year": year,
+                    "value": random.uniform(30000, 70000),
+                    "indicator": "GDP per capita (current US$)"
+                })
+    
+    elif dataset_id == "world-population":
+        countries = ["China", "India", "United States", "Indonesia", "Pakistan", 
+                     "Brazil", "Nigeria", "Bangladesh", "Russia", "Mexico"]
+        num_countries = max(1, min(len(countries), limit // 14 + 1))
+        for country in countries[:num_countries]:
+            base_pop = random.randint(50000000, 1400000000)
+            for year in range(2010, 2024):
+                data.append({
+                    "country": country,
+                    "country_code": country[:3].upper(),
+                    "year": year,
+                    "value": base_pop + (year - 2010) * random.randint(1000000, 20000000),
+                    "indicator": "Population, total"
+                })
+    
+    elif dataset_id == "world-life-expectancy":
+        countries = ["Japan", "Switzerland", "Singapore", "Spain", "Italy", 
+                     "Australia", "South Korea", "Iceland", "Israel", "Sweden"]
+        num_countries = max(1, min(len(countries), limit // 14 + 1))
+        for country in countries[:num_countries]:
+            for year in range(2010, 2024):
+                data.append({
+                    "country": country,
+                    "country_code": country[:3].upper(),
+                    "year": year,
+                    "value": round(random.uniform(78, 85), 1),
+                    "indicator": "Life expectancy at birth, total (years)"
+                })
+    
+    elif dataset_id == "world-co2-emissions":
+        countries = ["Qatar", "Trinidad and Tobago", "Kuwait", "United Arab Emirates", 
+                     "Bahrain", "Brunei", "Saudi Arabia", "Australia", "United States", "Canada"]
+        num_countries = max(1, min(len(countries), limit // 14 + 1))
+        for country in countries[:num_countries]:
+            for year in range(2010, 2024):
+                data.append({
+                    "country": country,
+                    "country_code": country[:3].upper(),
+                    "year": year,
+                    "value": round(random.uniform(5, 40), 2),
+                    "indicator": "CO2 emissions (metric tons per capita)"
+                })
+    
+    elif dataset_id == "global-temperature":
         # Generate temperature anomaly data
         start_year = 1980
         for i in range(min(limit, 500)):
@@ -299,7 +357,8 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     elif dataset_id == "us-census-population":
         states = ["California", "Texas", "Florida", "New York", "Pennsylvania", 
                   "Illinois", "Ohio", "Georgia", "North Carolina", "Michigan"]
-        for state in states[:min(10, limit // 10)]:
+        num_states = max(1, min(len(states), limit // 14 + 1))
+        for state in states[:num_states]:
             for year in range(2010, 2024):
                 base_pop = random.randint(5000000, 40000000)
                 data.append({
@@ -312,7 +371,8 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     elif dataset_id == "renewable-energy-capacity":
         countries = ["China", "USA", "Germany", "India", "Spain", "UK", "Brazil", 
                      "France", "Italy", "Canada"]
-        for country in countries[:min(10, limit // 10)]:
+        num_countries = max(1, min(len(countries), limit // 14 + 1))
+        for country in countries[:num_countries]:
             for year in range(2010, 2024):
                 data.append({
                     "country": country,
@@ -325,7 +385,8 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     elif dataset_id == "education-spending":
         countries = ["Norway", "Denmark", "Sweden", "Finland", "USA", "UK", 
                      "Germany", "France", "Japan", "South Korea"]
-        for country in countries[:min(10, limit // 10)]:
+        num_countries = max(1, min(len(countries), limit // 13 + 1))
+        for country in countries[:num_countries]:
             for year in range(2010, 2023):
                 data.append({
                     "country": country,
@@ -336,7 +397,8 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     elif dataset_id == "internet-users":
         countries = ["Iceland", "Norway", "Denmark", "Luxembourg", "Sweden", 
                      "South Korea", "Netherlands", "Finland", "Japan", "USA"]
-        for country in countries[:min(10, limit // 10)]:
+        num_countries = max(1, min(len(countries), limit // 13 + 1))
+        for country in countries[:num_countries]:
             for year in range(2010, 2023):
                 # Simulate increasing internet penetration
                 base_pct = 50 + (year - 2010) * 3
@@ -350,8 +412,10 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
         cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", 
                   "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"]
         base_date = datetime(2023, 1, 1)
-        for city in cities[:min(5, limit // 20)]:
-            for day in range(min(100, limit // 5)):
+        num_cities = max(1, min(5, (limit // 20) + 1))
+        num_days = max(1, min(100, (limit // num_cities)))
+        for city in cities[:num_cities]:
+            for day in range(num_days):
                 date = base_date + timedelta(days=day)
                 data.append({
                     "city": city,
@@ -364,7 +428,8 @@ def generate_mock_data(dataset: Dict, limit: int = 100) -> List[Dict]:
     elif dataset_id == "literacy-rates":
         countries = ["Finland", "Norway", "Iceland", "Denmark", "Sweden", 
                      "Netherlands", "Belgium", "Estonia", "Ireland", "Poland"]
-        for country in countries[:min(10, limit // 5)]:
+        num_countries = max(1, min(10, (limit // 3) + 1))
+        for country in countries[:num_countries]:
             for year in [2010, 2015, 2020]:
                 base_rate = random.uniform(92, 99.9)
                 data.append({
@@ -398,9 +463,17 @@ def fetch_dataset_data(
     # Fetch data based on provider/format
     if dataset["format"] == "worldbank" and "indicator" in dataset:
         data = fetch_worldbank_data(dataset["indicator"], limit)
+        # Fallback to mock data if API fails
+        if not data:
+            logger.warning(f"World Bank API failed for {dataset_id}, using mock data")
+            data = generate_mock_data(dataset, limit)
     
     elif dataset["format"] == "socrata" and "url" in dataset:
         data = fetch_socrata_data(dataset["url"], limit, offset)
+        # Fallback to mock data if API fails
+        if not data:
+            logger.warning(f"Socrata API failed for {dataset_id}, using mock data")
+            data = generate_mock_data(dataset, limit)
     
     elif dataset["format"] == "mock":
         data = generate_mock_data(dataset, limit)
