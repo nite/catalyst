@@ -26,7 +26,7 @@ export default function Home() {
   ]
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 h-full overflow-y-auto">
       {/* Hero Section */}
       <section className="rounded-[28px] bg-white/85 border border-white/70 shadow-[0_30px_80px_-60px_rgba(15,118,110,0.7)] px-6 py-10 md:px-12 md:py-14 animate-rise">
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">

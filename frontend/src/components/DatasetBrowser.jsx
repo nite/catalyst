@@ -43,7 +43,7 @@ export default function DatasetBrowser() {
   const activeFiltersCount = [searchTerm, selectedProvider, selectedCategory].filter(Boolean).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col gap-2">
         <p className="uppercase tracking-[0.35em] text-xs text-primary-600 font-semibold">
@@ -51,7 +51,7 @@ export default function DatasetBrowser() {
         </p>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 font-display">
+            <h1 data-testid="datasets-title" className="text-3xl md:text-4xl font-bold text-gray-900 font-display">
               Explore Datasets
             </h1>
             <p className="text-gray-600">

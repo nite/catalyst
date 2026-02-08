@@ -101,17 +101,17 @@ def suggest_chart_types(columns: List[Dict[str, Any]], dataset_meta: Dict) -> Li
                     "priority": 2
                 })
     
-    # Pie/Donut charts for proportions
+    # Treemap charts for proportions
     if categorical_cols and numerical_cols:
         cat_col = categorical_cols[0]
         if cat_col["unique_count"] <= 10:  # Only for small number of categories
             num_col = numerical_cols[0]
             suggestions.append({
-                "chart_type": "pie",
+                "chart_type": "treemap",
                 "title": f"Distribution of {num_col['name']} by {cat_col['name']}",
                 "category": cat_col["name"],
                 "value": num_col["name"],
-                "description": "Proportional distribution",
+                "description": "Proportional distribution (treemap)",
                 "priority": 3
             })
     

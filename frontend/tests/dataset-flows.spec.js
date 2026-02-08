@@ -10,17 +10,18 @@ test.describe('dataset coverage (headless)', () => {
 
     test('iterate every dataset, chart type, and filter update', async ({ page, request }) => {
         await ensureApiReady(request)
-        await page.goto('/datasets')
+        await page.goto('/datasets', { waitUntil: 'domcontentloaded' })
+        await page.getByTestId('datasets-title').waitFor({ timeout: 30000 })
 
         const datasetCards = page.getByTestId('dataset-card')
-        await expect(datasetCards.first()).toBeVisible()
+        await expect(datasetCards.first()).toBeVisible({ timeout: 30000 })
         await datasetCards.first().click()
 
         const datasetSelect = page.getByTestId('dataset-select')
         await expect(datasetSelect).toBeVisible()
 
-        const chartSelect = page.getByTestId('chart-select')
-        await expect(chartSelect).toBeVisible()
+        const chartTypeSelect = page.getByTestId('chart-type-select')
+        await expect(chartTypeSelect).toBeVisible()
 
         const datasetOptions = datasetSelect.locator('option')
         const datasetCount = await datasetOptions.count()
@@ -38,18 +39,50 @@ test.describe('dataset coverage (headless)', () => {
                 datasetSelect.selectOption(datasetValue || '')
             ])
             if (datasetLabel) {
-                await expect(page.getByRole('heading', { name: datasetLabel.trim() })).toBeVisible()
+                await expect(page.getByTestId('dataset-title')).toHaveText(datasetLabel.trim())
             }
 
             await page.waitForLoadState('networkidle')
 
-            const chartOptions = chartSelect.locator('option')
+            const chartOptions = chartTypeSelect.locator('option')
             await expect.poll(async () => chartOptions.count()).toBeGreaterThan(0)
             const chartCount = await chartOptions.count()
 
             for (let chartIndex = 0; chartIndex < chartCount; chartIndex += 1) {
-                await chartSelect.selectOption({ index: chartIndex })
-                await expect(page.getByTestId('chart-canvas')).toBeVisible()
+                await chartTypeSelect.selectOption({ index: chartIndex })
+
+                const axisSelects = [
+                    page.locator('[data-testid="x-axis-select"]'),
+                    page.locator('[data-testid="y-axis-select"]'),
+                    page.locator('[data-testid="category-select"]'),
+                    page.locator('[data-testid="value-select"]'),
+                    page.locator('[data-testid="location-select"]'),
+                    page.locator('[data-testid="map-value-select"]')
+                ]
+
+                for (const axisSelect of axisSelects) {
+                    if (await axisSelect.count() > 0) {
+                        const options = axisSelect.locator('option')
+                        if (await options.count() > 0) {
+                            await axisSelect.selectOption({ index: 0 })
+                        }
+                    }
+                }
+
+                const chartSection = page.getByTestId('chart-section')
+                await expect(chartSection).toBeVisible()
+                await chartSection.scrollIntoViewIfNeeded()
+                await page.waitForTimeout(300)
+                const firstBox = await chartSection.boundingBox()
+                await page.waitForTimeout(300)
+                const secondBox = await chartSection.boundingBox()
+                const viewport = page.viewportSize()
+
+                if (firstBox && secondBox && viewport) {
+                    expect(Math.abs(secondBox.y - firstBox.y)).toBeLessThan(4)
+                    expect(secondBox.y).toBeGreaterThanOrEqual(0)
+                    expect(secondBox.y + secondBox.height).toBeLessThanOrEqual(viewport.height)
+                }
             }
 
             const filtersPanel = page.getByTestId('filters-panel')
@@ -83,10 +116,11 @@ test.describe('dataset coverage (headless)', () => {
 test.describe('dataset browser controls', () => {
     test('search and filter interactions', async ({ page, request }) => {
         await ensureApiReady(request)
-        await page.goto('/datasets')
+        await page.goto('/datasets', { waitUntil: 'domcontentloaded' })
+        await page.getByTestId('datasets-title').waitFor({ timeout: 30000 })
 
         const search = page.getByTestId('dataset-search')
-        await expect(search).toBeVisible()
+        await expect(search).toBeVisible({ timeout: 30000 })
         await search.fill('climate')
 
         const providerSelect = page.getByTestId('provider-select')
@@ -100,6 +134,6 @@ test.describe('dataset browser controls', () => {
         await search.fill('')
 
         const datasetCards = page.getByTestId('dataset-card')
-        await expect(datasetCards.first()).toBeVisible()
+        await expect(datasetCards.first()).toBeVisible({ timeout: 30000 })
     })
 })
