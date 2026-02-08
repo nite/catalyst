@@ -4,7 +4,6 @@ Service for fetching data from various providers.
 
 import httpx
 import json
-import sys
 from typing import Any, Dict, List
 from app.core.models import DataProvider
 

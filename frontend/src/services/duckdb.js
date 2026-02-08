@@ -86,21 +86,23 @@ export async function filterData(tableName, filters = {}) {
   let sql = `SELECT * FROM ${tableName}`;
   const conditions = [];
 
-  // Build WHERE clause
+  // Build WHERE clause with proper escaping
   for (const [column, value] of Object.entries(filters)) {
     if (value === null || value === undefined) continue;
 
     if (Array.isArray(value)) {
-      // IN clause for arrays
-      const values = value.map(v => typeof v === 'string' ? `'${v}'` : v).join(',');
+      // IN clause for arrays - escape strings properly
+      const values = value.map(v => 
+        typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v
+      ).join(',');
       conditions.push(`${column} IN (${values})`);
     } else if (typeof value === 'object' && value.min !== undefined) {
-      // Range filter
+      // Range filter - numeric values only
       if (value.min !== null) conditions.push(`${column} >= ${value.min}`);
       if (value.max !== null) conditions.push(`${column} <= ${value.max}`);
     } else {
-      // Exact match
-      const val = typeof value === 'string' ? `'${value}'` : value;
+      // Exact match - escape strings
+      const val = typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value;
       conditions.push(`${column} = ${val}`);
     }
   }
@@ -118,10 +120,17 @@ export async function filterData(tableName, filters = {}) {
 export async function aggregateData(tableName, spec) {
   const { groupBy, aggregations, limit } = spec;
   
+  // Validate function names to prevent injection
+  const validFuncs = ['sum', 'avg', 'count', 'min', 'max', 'std', 'median'];
+  
   // Build SELECT clause
   const selectParts = [...groupBy];
   for (const [column, func] of Object.entries(aggregations)) {
-    selectParts.push(`${func.toUpperCase()}(${column}) as ${column}_${func}`);
+    const funcLower = func.toLowerCase();
+    if (!validFuncs.includes(funcLower)) {
+      throw new Error(`Invalid aggregation function: ${func}`);
+    }
+    selectParts.push(`${funcLower.toUpperCase()}(${column}) as ${column}_${funcLower}`);
   }
 
   let sql = `SELECT ${selectParts.join(', ')} FROM ${tableName}`;
@@ -130,7 +139,7 @@ export async function aggregateData(tableName, spec) {
     sql += ` GROUP BY ${groupBy.join(', ')}`;
   }
   
-  if (limit) {
+  if (limit && Number.isInteger(limit) && limit > 0) {
     sql += ` LIMIT ${limit}`;
   }
 
