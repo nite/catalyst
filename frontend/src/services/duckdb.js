@@ -1,39 +1,62 @@
-import alasql from 'alasql';
+import * as duckdb from '@duckdb/duckdb-wasm';
 
-let currentTable = null;
+let db = null;
+let conn = null;
 
 /**
- * Initialize AlaSQL (lightweight in-browser SQL database)
- * Safe alternative to DuckDB-WASM
+ * Initialize DuckDB-WASM instance
  */
 export async function initDuckDB() {
-  // AlaSQL is ready to use immediately, no initialization needed
-  console.log('AlaSQL initialized successfully');
-  return { db: alasql, conn: alasql };
+  if (db) return { db, conn };
+
+  try {
+    const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+    
+    const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+    const worker_url = URL.createObjectURL(
+      new Blob([`importScripts("${bundle.mainWorker}");`], {
+        type: 'text/javascript',
+      })
+    );
+
+    const worker = new Worker(worker_url);
+    const logger = new duckdb.ConsoleLogger();
+    db = new duckdb.AsyncDuckDB(logger, worker);
+    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    URL.revokeObjectURL(worker_url);
+
+    conn = await db.connect();
+    
+    console.log('DuckDB-WASM initialized successfully');
+    
+    return { db, conn };
+  } catch (error) {
+    console.error('Failed to initialize DuckDB:', error);
+    throw error;
+  }
 }
 
 /**
- * Load data into AlaSQL table
+ * Load data into DuckDB table
  */
 export async function loadDataIntoTable(tableName, data) {
+  if (!conn) {
+    await initDuckDB();
+  }
+
   try {
     // Drop table if exists
-    try {
-      alasql(`DROP TABLE IF EXISTS ${tableName}`);
-    } catch (e) {
-      // Table might not exist, ignore
-    }
+    await conn.query(`DROP TABLE IF EXISTS ${tableName}`);
     
-    // Create table and insert data
-    alasql(`CREATE TABLE ${tableName}`);
-    alasql.tables[tableName].data = data;
+    // Insert data
+    await db.registerFileText(`${tableName}.json`, JSON.stringify(data));
+    await conn.query(`CREATE TABLE ${tableName} AS SELECT * FROM read_json_auto('${tableName}.json')`);
     
     console.log(`Loaded ${data.length} rows into table ${tableName}`);
-    currentTable = tableName;
     
     return true;
   } catch (error) {
-    console.error('Failed to load data into AlaSQL:', error);
+    console.error('Failed to load data into DuckDB:', error);
     throw error;
   }
 }
@@ -42,9 +65,14 @@ export async function loadDataIntoTable(tableName, data) {
  * Execute SQL query
  */
 export async function executeQuery(sql) {
+  if (!conn) {
+    await initDuckDB();
+  }
+
   try {
-    const result = alasql(sql);
-    return Array.isArray(result) ? result : [result];
+    const result = await conn.query(sql);
+    const rows = result.toArray().map(row => row.toJSON());
+    return rows;
   } catch (error) {
     console.error('Query execution failed:', error);
     throw error;
@@ -93,7 +121,7 @@ export async function aggregateData(tableName, spec) {
   const { groupBy, aggregations, limit } = spec;
   
   // Validate function names to prevent injection
-  const validFuncs = ['sum', 'avg', 'count', 'min', 'max'];
+  const validFuncs = ['sum', 'avg', 'count', 'min', 'max', 'std', 'median'];
   
   // Build SELECT clause
   const selectParts = [...groupBy];

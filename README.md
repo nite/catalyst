@@ -6,8 +6,8 @@
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61dafb)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)
 ![Visualization](https://img.shields.io/badge/Charts-Apache%20ECharts-aa344d)
-![Data Processing](https://img.shields.io/badge/Processing-AlaSQL-ffc107)
-![Security](https://img.shields.io/badge/Security-Vulnerabilities%20Fixed-green)
+![Data Processing](https://img.shields.io/badge/Processing-DuckDB--WASM-ffc107)
+![Security](https://img.shields.io/badge/Security-Secure%20Latest%20Versions-green)
 
 ## 🚀 Features
 
@@ -22,7 +22,7 @@
 
 - **Adaptive Aggregation Strategy**:
   - 🔄 **Client-side** processing for small datasets (<100k rows)
-  - ⚡ **AlaSQL** for secure in-browser SQL queries
+  - ⚡ **DuckDB-WASM** for blazing-fast in-browser SQL queries (v1.32.0)
   - 🖥️ **Server-side** aggregation for large datasets (>100k rows)
   - 🧠 Intelligent automatic strategy selection
 
@@ -36,7 +36,7 @@
   - 📅 Date range pickers
   - 🏷️ Category selectors
   - 🔢 Numeric range sliders
-  - ⚡ Instant client-side filtering with AlaSQL
+  - ⚡ Instant client-side filtering with DuckDB-WASM
   - 🔄 Efficient server-side filtering for large datasets
 
 - **Offline Capability**:
@@ -46,12 +46,11 @@
 
 ## 🔒 Security
 
-**All vulnerabilities fixed:**
-- ✅ FastAPI upgraded to 0.115.0 (fixes ReDoS vulnerability)
-- ✅ Removed malicious @duckdb/duckdb-wasm package
-- ✅ Replaced with AlaSQL (safe, lightweight, 100% JavaScript)
-- ✅ All dependencies updated to latest secure versions
-- ✅ SQL injection vulnerabilities patched
+**All dependencies secure and up-to-date:**
+- ✅ FastAPI 0.115.0 (latest stable)
+- ✅ DuckDB-WASM 1.32.0 (latest stable, secure version)
+- ✅ axios 1.12.0 (all vulnerabilities patched)
+- ✅ All SQL queries use proper escaping
 - ✅ CodeQL security scan: 0 alerts
 
 ## 📐 Architecture
@@ -108,7 +107,7 @@
 - ⚛️ **React 18** with Vite for blazing-fast builds
 - 🎨 **TailwindCSS** for mobile-first responsive design
 - 📊 **Apache ECharts** with WebAssembly rendering
-- 🔒 **AlaSQL** for secure client-side data processing (replaces DuckDB-WASM)
+- 🦆 **DuckDB-WASM 1.32.0** for high-performance client-side data processing
 - 💾 **IndexedDB** (via idb) for dataset caching
 - 🧭 **React Router** for navigation
 
