@@ -51,8 +51,8 @@ export default function Chart({ data, chartConfig, analysis }) {
             label: y_axis,
             data: values,
             borderColor: 'rgb(14, 165, 233)',
-            backgroundColor: chart_type === 'bar' 
-              ? 'rgba(14, 165, 233, 0.8)' 
+            backgroundColor: chart_type === 'bar'
+              ? 'rgba(14, 165, 233, 0.8)'
               : 'rgba(14, 165, 233, 0.1)',
             borderWidth: 2,
             fill: chart_type === 'line',
@@ -182,7 +182,7 @@ export default function Chart({ data, chartConfig, analysis }) {
           color: 'rgba(0, 0, 0, 0.05)'
         },
         ticks: {
-          callback: function(value) {
+          callback: function (value) {
             if (Math.abs(value) >= 1000000) {
               return (value / 1000000).toFixed(1) + 'M'
             } else if (Math.abs(value) >= 1000) {

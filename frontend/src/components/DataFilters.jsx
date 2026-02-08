@@ -164,11 +164,10 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
       {/* Filter Panel */}
       <div
         data-testid="filters-panel"
-        className={`bg-white/95 rounded-2xl shadow-[0_25px_70px_-50px_rgba(15,118,110,0.7)] p-4 border border-white/70 ${
-          showMobileFilters
+        className={`bg-white/95 rounded-2xl shadow-[0_25px_70px_-50px_rgba(15,118,110,0.7)] p-4 border border-white/70 ${showMobileFilters
             ? 'fixed z-50 left-4 right-4 top-24 max-h-[70vh] overflow-y-auto'
             : 'hidden lg:block'
-        }`}
+          }`}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900 font-display flex items-center">
