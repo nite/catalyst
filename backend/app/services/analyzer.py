@@ -41,7 +41,8 @@ class DataAnalyzer:
             unique_count = col_data.nunique()
             is_categorical = (
                 not is_numeric and 
-                unique_count < min(50, len(col_data) * 0.1)
+                not is_temporal and
+                unique_count < min(50, max(10, len(col_data) * 0.5))
             )
             
             # Get sample values
