@@ -40,31 +40,93 @@ export default function DatasetBrowser() {
 
   const providers = ['data.gov', 'worldbank', 'owid', 'noaa', 'census']
   const categories = ['health', 'economy', 'climate', 'demographics', 'education', 'technology']
+  const activeFiltersCount = [searchTerm, selectedProvider, selectedCategory].filter(Boolean).length
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Explore Datasets</h1>
-          <p className="text-gray-600 mt-1">
-            Browse {datasets.length} curated datasets from multiple sources
-          </p>
+      <div className="flex flex-col gap-2">
+        <p className="uppercase tracking-[0.35em] text-xs text-primary-600 font-semibold">
+          Dataset Library
+        </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 font-display">
+              Explore Datasets
+            </h1>
+            <p className="text-gray-600">
+              Browse {datasets.length} curated datasets across trusted sources.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <span className="px-3 py-1 bg-white/70 rounded-full border border-white/80">
+              Results: {filteredDatasets.length}
+            </span>
+            <span className="px-3 py-1 bg-white/70 rounded-full border border-white/80">
+              Filters: {activeFiltersCount}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4 space-y-4">
+      <div className="bg-white/85 rounded-2xl shadow-[0_25px_70px_-55px_rgba(15,118,110,0.6)] p-4 md:p-6 space-y-4 border border-white/70">
         {/* Search Bar */}
         <div className="relative">
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
+            data-testid="dataset-search"
             type="text"
             placeholder="Search datasets..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-field pl-10"
           />
+        </div>
+
+        {/* Quick Filter Chips */}
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setSelectedCategory(category)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
+                selectedCategory === category
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white/70 text-gray-600 hover:bg-primary-100'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+          {providers.map((provider) => (
+            <button
+              key={provider}
+              type="button"
+              onClick={() => setSelectedProvider(provider)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
+                selectedProvider === provider
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white/70 text-gray-600 hover:bg-primary-100'
+              }`}
+            >
+              {provider}
+            </button>
+          ))}
+          {(selectedProvider || selectedCategory || searchTerm) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedProvider('')
+                setSelectedCategory('')
+                setSearchTerm('')
+              }}
+              className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-gray-900 text-white"
+            >
+              Clear all
+            </button>
+          )}
         </div>
 
         {/* Filters */}
@@ -75,6 +137,7 @@ export default function DatasetBrowser() {
               Data Provider
             </label>
             <select
+              data-testid="provider-select"
               value={selectedProvider}
               onChange={(e) => setSelectedProvider(e.target.value)}
               className="input-field"
@@ -91,6 +154,7 @@ export default function DatasetBrowser() {
               Category
             </label>
             <select
+              data-testid="category-select"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="input-field"
@@ -127,15 +191,17 @@ export default function DatasetBrowser() {
       {/* Dataset Grid */}
       {!loading && !error && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDatasets.map(dataset => (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredDatasets.map((dataset, index) => (
               <Link
                 key={dataset.id}
                 to={`/datasets/${dataset.id}`}
-                className="card hover:scale-105 transform transition-transform"
+                data-testid="dataset-card"
+                className="card group hover:-translate-y-1 transition-transform animate-fade"
+                style={{ animationDelay: `${index * 40}ms` }}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
+                  <h3 className="text-lg font-bold text-gray-900 font-display line-clamp-2">
                     {dataset.name}
                   </h3>
                 </div>

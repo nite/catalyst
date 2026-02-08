@@ -224,6 +224,34 @@ The `render.yaml` automatically configures:
 - `PORT` - Service port
 - `PYTHON_VERSION` - Python version for backend
 
+### Dataset API Keys
+
+You can enable additional datasets by providing API keys. Copy the template in [.env.example](.env.example) and set any of the following:
+
+- `CENSUS_API_KEY` - US Census (ACS 1-year) population dataset
+- `OPENWEATHER_API_KEY` - OpenWeather 5-day forecast dataset
+- `WEATHERAPI_API_KEY` - WeatherAPI 7-day forecast dataset
+- `NASA_EARTHDATA_TOKEN` - NASA Earthdata MODIS granules dataset
+- `FRED_API_KEY` - FRED GDP series dataset
+- `ALPHAVANTAGE_API_KEY` - Alpha Vantage daily stock dataset
+- `OPENAQ_API_KEY` - OpenAQ air quality dataset
+- `SOCRATA_APP_TOKEN` - NYC Open Data (Socrata) 311 dataset
+- `GDELT_API_KEY` - GDELT events dataset
+- `WORLD_BANK_API_KEY` - Optional World Bank API key (used if provided)
+
+Registration and docs pages:
+
+- `CENSUS_API_KEY` - [Get key](https://api.census.gov/data/key_signup.html) | [Docs](https://api.census.gov/data.html)
+- `OPENWEATHER_API_KEY` - [Get key](https://home.openweathermap.org/users/sign_up) | [Docs](https://openweathermap.org/api)
+- `WEATHERAPI_API_KEY` - [Get key](https://www.weatherapi.com/signup.aspx) | [Docs](https://www.weatherapi.com/docs/)
+- `NASA_EARTHDATA_TOKEN` - [Create Earthdata login](https://urs.earthdata.nasa.gov/users/new) | [Docs](https://earthdata.nasa.gov/learn/earthdata-login)
+- `FRED_API_KEY` - [Get key](https://fred.stlouisfed.org/docs/api/api_key.html) | [Docs](https://fred.stlouisfed.org/docs/api/fred/)
+- `ALPHAVANTAGE_API_KEY` - [Get key](https://www.alphavantage.co/support/#api-key) | [Docs](https://www.alphavantage.co/documentation/)
+- `OPENAQ_API_KEY` - [Get key](https://openaq.org/#/register) | [Docs](https://docs.openaq.org/)
+- `SOCRATA_APP_TOKEN` - [Create app token](https://data.cityofnewyork.us/profile/edit/developer_settings) | [Docs](https://dev.socrata.com/)
+- `GDELT_API_KEY` - [Docs](https://www.gdeltproject.org/) (key optional)
+- `WORLD_BANK_API_KEY` - [Docs](https://datahelpdesk.worldbank.org/knowledgebase/articles/898590-api-basic-call-structures) (key optional)
+
 ## 🛠️ Technology Stack
 
 ### Frontend

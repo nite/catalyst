@@ -139,6 +139,46 @@ def suggest_chart_types(columns: List[Dict[str, Any]], dataset_meta: Dict) -> Li
     
     # Sort by priority
     suggestions.sort(key=lambda x: x.get("priority", 99))
+
+    if not suggestions and columns:
+        numeric = [c for c in columns if c["type"] == "numerical"]
+        temporal = [c for c in columns if c["type"] == "temporal"]
+        if len(numeric) >= 2:
+            suggestions.append({
+                "chart_type": "scatter",
+                "title": f"{numeric[0]['name']} vs {numeric[1]['name']}",
+                "x_axis": numeric[0]["name"],
+                "y_axis": numeric[1]["name"],
+                "description": "Fallback scatter plot",
+                "priority": 5
+            })
+        elif temporal and numeric:
+            suggestions.append({
+                "chart_type": "line",
+                "title": f"{numeric[0]['name']} over time",
+                "x_axis": temporal[0]["name"],
+                "y_axis": numeric[0]["name"],
+                "description": "Fallback time series",
+                "priority": 5
+            })
+        elif numeric:
+            suggestions.append({
+                "chart_type": "bar",
+                "title": f"{numeric[0]['name']} by category",
+                "x_axis": columns[0]["name"],
+                "y_axis": numeric[0]["name"],
+                "description": "Fallback comparison chart",
+                "priority": 5
+            })
+        else:
+            suggestions.append({
+                "chart_type": "bar",
+                "title": "Record count by category",
+                "x_axis": columns[0]["name"],
+                "y_axis": columns[0]["name"],
+                "description": "Fallback chart",
+                "priority": 5
+            })
     
     return suggestions
 
