@@ -6,6 +6,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![React](https://img.shields.io/badge/React-18.2-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)
+[![Deploy to Koyeb](https://img.shields.io/badge/Deploy_to-Koyeb-121212?logo=koyeb)](https://app.koyeb.com/deploy?type=docker&repository=github.com/nite/catalyst&branch=main&name=catalyst)
 
 ## 🌟 Overview
 
