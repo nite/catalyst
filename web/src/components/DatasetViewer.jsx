@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiArrowLeft, FiChevronDown, FiRefreshCw } from "react-icons/fi";
+import {
+	FiArrowLeft,
+	FiChevronDown,
+	FiInfo,
+	FiRefreshCw,
+	FiX,
+} from "react-icons/fi";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
 	analyzeDataset,
@@ -30,6 +36,7 @@ export default function DatasetViewer() {
 	const [locationAxis, setLocationAxis] = useState("");
 	const [openAxisPicker, setOpenAxisPicker] = useState(null);
 	const [showPreview, setShowPreview] = useState(false);
+	const [showCoverage, setShowCoverage] = useState(false);
 	const { setHeader } = useHeader();
 
 	const loadDataset = useCallback(async () => {
@@ -198,7 +205,7 @@ export default function DatasetViewer() {
 		// Prefer low-cardinality columns for better color encoding
 		const autoColor =
 			_categoricalByCardinality[0]?.name &&
-				_categoricalByCardinality[0].unique_count <= 10
+			_categoricalByCardinality[0].unique_count <= 10
 				? _categoricalByCardinality[0].name
 				: _categoricalCols[1]?.name || _categoricalCols[0]?.name;
 		setColorBy((prev) => (prev.length ? prev : autoColor ? [autoColor] : []));
@@ -420,6 +427,37 @@ export default function DatasetViewer() {
 		);
 	}, [analysis, dataset, selectedChart, xAxis, yAxis, formatAxisList]);
 
+	const activeFilterEntries = useMemo(() => {
+		return Object.entries(filters).filter(([, value]) => {
+			if (value === null || value === undefined) return false;
+			if (Array.isArray(value)) return value.length > 0;
+			if (typeof value === "string") return value.trim() !== "";
+			return true;
+		});
+	}, [filters]);
+
+	const clearAllFilters = useCallback(() => {
+		setFilters({});
+	}, []);
+
+	const removeFilter = useCallback((key) => {
+		setFilters((prev) => {
+			const updated = { ...prev };
+			delete updated[key];
+			return updated;
+		});
+	}, []);
+
+	const formatFilterValue = useCallback((value) => {
+		if (Array.isArray(value)) {
+			return value.length > 2
+				? `${value.slice(0, 2).join(", ")}...`
+				: value.join(", ");
+		}
+		const str = String(value);
+		return str.length > 20 ? `${str.slice(0, 20)}...` : str;
+	}, []);
+
 	useEffect(() => {
 		setHeader(headerContent);
 		return () => setHeader(null);
@@ -639,6 +677,243 @@ export default function DatasetViewer() {
 							</button>
 						</div>
 					</div>
+
+					{/* KPI strip with dataset summary - Priority 2 */}
+					{analysis?.statistics && data && (
+						<div
+							data-testid="kpi-strip"
+							className="rounded-2xl border border-gray-200 bg-gradient-to-r from-primary-50/50 to-white/80 p-3"
+						>
+							<div className="flex items-center gap-6 flex-wrap">
+								<div className="flex flex-col">
+									<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+										Total Rows
+									</span>
+									<span className="text-xl font-semibold text-gray-900">
+										{(
+											data.total ||
+											analysis.statistics.total_rows ||
+											0
+										).toLocaleString()}
+									</span>
+								</div>
+								<div className="flex flex-col">
+									<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+										Columns
+									</span>
+									<span className="text-xl font-semibold text-gray-900">
+										{analysis.statistics.total_columns}
+									</span>
+								</div>
+								{analysis.statistics.has_time_series && analysis.columns && (
+									<div className="flex flex-col">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Time Range
+										</span>
+										<span className="text-sm font-medium text-gray-700">
+											{(() => {
+												const temporalCol = analysis.columns.find(
+													(col) => col.type === "temporal",
+												);
+												if (temporalCol?.min_value && temporalCol?.max_value) {
+													return `${temporalCol.min_value} - ${temporalCol.max_value}`;
+												}
+												return "Available";
+											})()}
+										</span>
+									</div>
+								)}
+								{analysis.statistics.has_geographic && (
+									<div className="flex flex-col">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Geographic
+										</span>
+										<span className="text-sm font-medium text-primary-700">
+											✓ Available
+										</span>
+									</div>
+								)}
+								{analysis.columns &&
+									analysis.columns.filter((col) => col.type === "numerical")
+										.length > 0 && (
+										<div className="flex flex-col">
+											<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+												Metrics
+											</span>
+											<span className="text-sm font-medium text-gray-700">
+												{
+													analysis.columns.filter(
+														(col) => col.type === "numerical",
+													).length
+												}{" "}
+												numerical
+											</span>
+										</div>
+									)}
+								<button
+									type="button"
+									data-testid="toggle-coverage-panel"
+									onClick={() => setShowCoverage((prev) => !prev)}
+									className="ml-auto text-xs px-3 py-1.5 border border-gray-200 rounded-full hover:bg-white transition-colors inline-flex items-center gap-1.5"
+								>
+									<FiInfo className="h-3.5 w-3.5" />
+									{showCoverage ? "Hide" : "Show"} Coverage
+								</button>
+							</div>
+						</div>
+					)}
+
+					{/* Dataset coverage panel - Priority 3 */}
+					{showCoverage && analysis && dataset && (
+						<div
+							data-testid="coverage-panel"
+							className="rounded-2xl border border-gray-200 bg-white/80 p-3"
+						>
+							<h4 className="text-xs font-semibold text-gray-900 mb-3 uppercase tracking-[0.2em]">
+								Dataset Coverage
+							</h4>
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+								{/* Time coverage */}
+								{analysis.columns?.find((col) => col.type === "temporal") && (
+									<div className="space-y-1">
+										<div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Time Coverage
+										</div>
+										{(() => {
+											const temporalCol = analysis.columns.find(
+												(col) => col.type === "temporal",
+											);
+											if (temporalCol) {
+												return (
+													<div className="text-sm text-gray-700">
+														<div>
+															<strong>From:</strong>{" "}
+															{temporalCol.min_value || "N/A"}
+														</div>
+														<div>
+															<strong>To:</strong>{" "}
+															{temporalCol.max_value || "N/A"}
+														</div>
+														<div className="text-xs text-gray-500 mt-1">
+															{temporalCol.unique_count
+																? `${temporalCol.unique_count.toLocaleString()} unique dates`
+																: ""}
+														</div>
+													</div>
+												);
+											}
+											return (
+												<div className="text-sm text-gray-500">
+													Not available
+												</div>
+											);
+										})()}
+									</div>
+								)}
+
+								{/* Geographic coverage */}
+								{analysis.columns &&
+									analysis.columns.filter((col) => col.is_geographic).length >
+										0 && (
+										<div className="space-y-1">
+											<div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+												Geographic Coverage
+											</div>
+											<div className="text-sm text-gray-700">
+												{analysis.columns
+													.filter((col) => col.is_geographic)
+													.map((col) => (
+														<div key={col.name} className="mb-1">
+															<strong>{col.name}:</strong>{" "}
+															{col.unique_count
+																? `${col.unique_count.toLocaleString()} locations`
+																: "Available"}
+														</div>
+													))}
+											</div>
+										</div>
+									)}
+
+								{/* Data freshness */}
+								<div className="space-y-1">
+									<div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+										Data Freshness
+									</div>
+									<div className="text-sm text-gray-700">
+										<div>
+											<strong>Provider:</strong> {dataset.provider || "N/A"}
+										</div>
+										<div>
+											<strong>Category:</strong> {dataset.category || "N/A"}
+										</div>
+										<div className="text-xs text-gray-500 mt-1">
+											Last updated: Available on demand
+										</div>
+									</div>
+								</div>
+
+								{/* Data quality indicators */}
+								<div className="space-y-1">
+									<div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+										Data Quality
+									</div>
+									<div className="text-sm text-gray-700">
+										<div>
+											<strong>Completeness:</strong>{" "}
+											{analysis.statistics?.total_rows > 0
+												? "✓ Good"
+												: "⚠ Limited"}
+										</div>
+										<div>
+											<strong>Data Types:</strong>{" "}
+											{analysis.columns
+												? `${analysis.columns.length} columns`
+												: "N/A"}
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* Filter chips row - Priority 1 */}
+					{activeFilterEntries.length > 0 && (
+						<div
+							data-testid="filter-chips-row"
+							className="rounded-2xl border border-gray-200 bg-white/80 p-2"
+						>
+							<div className="flex items-center gap-2 flex-wrap">
+								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 whitespace-nowrap">
+									Active Filters
+								</span>
+								<div className="flex items-center gap-2 flex-wrap flex-1">
+									{activeFilterEntries.map(([key, value]) => (
+										<button
+											key={key}
+											type="button"
+											data-testid={`filter-chip-${key}`}
+											onClick={() => removeFilter(key)}
+											className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+										>
+											<span className="truncate max-w-[200px]">
+												{key.replace(/_/g, " ")}: {formatFilterValue(value)}
+											</span>
+											<FiX className="h-3.5 w-3.5 flex-shrink-0" />
+										</button>
+									))}
+								</div>
+								<button
+									type="button"
+									data-testid="clear-all-filters"
+									onClick={clearAllFilters}
+									className="text-xs px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors whitespace-nowrap"
+								>
+									Clear All
+								</button>
+							</div>
+						</div>
+					)}
+
 					<div
 						data-testid="chart-section"
 						className="flex-1 min-h-0 relative rounded-2xl border border-gray-200 bg-white/80 overflow-hidden"
@@ -655,8 +930,9 @@ export default function DatasetViewer() {
 
 						{data?.data?.length > 0 && (
 							<div
-								className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${showPreview ? "max-h-80" : "h-10"
-									}`}
+								className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${
+									showPreview ? "max-h-80" : "h-10"
+								}`}
 							>
 								<button
 									type="button"
