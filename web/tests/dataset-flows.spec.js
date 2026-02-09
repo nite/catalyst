@@ -59,9 +59,40 @@ test.describe("dataset coverage (headless)", () => {
 			for (let chartIndex = 0; chartIndex < chartCount; chartIndex += 1) {
 				await chartTypeSelect.selectOption({ index: chartIndex });
 
+				const axisButtons = [
+					{
+						buttonId: "x-axis-select",
+						popoverId: "x-axis-popover",
+					},
+					{
+						buttonId: "y-axis-select",
+						popoverId: "y-axis-popover",
+					},
+					{
+						buttonId: "color-by-select",
+						popoverId: "color-by-popover",
+					},
+				];
+
+				for (const axisButton of axisButtons) {
+					const button = page.getByTestId(axisButton.buttonId);
+					if ((await button.count()) > 0) {
+						await button.first().click();
+						const popover = page.getByTestId(axisButton.popoverId);
+						if ((await popover.count()) > 0) {
+							await expect(popover).toBeVisible();
+							const checkbox = popover
+								.locator('input[type="checkbox"]')
+								.first();
+							if ((await checkbox.count()) > 0) {
+								await checkbox.check();
+							}
+							await popover.getByRole("button", { name: "Done" }).click();
+						}
+					}
+				}
+
 				const axisSelects = [
-					page.locator('[data-testid="x-axis-select"]'),
-					page.locator('[data-testid="y-axis-select"]'),
 					page.locator('[data-testid="category-select"]'),
 					page.locator('[data-testid="value-select"]'),
 					page.locator('[data-testid="location-select"]'),

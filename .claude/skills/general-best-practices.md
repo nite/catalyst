@@ -22,6 +22,7 @@ alwaysApply: true
 | Resource cleanup | useEffect cleanup, remove listeners, cancel subscriptions |
 | Dependencies | Do not add packages for trivial functionality |
 | Logging (CRITICAL) | loglevel (web), loguru (api) - never use console.* |
+| Concurrency | Assume concurrent agents: keep edits small, re-read before writing, and never rely on exclusive file access |
 | Code quality | Run make format and make check before completing |
 | Verification | Ensure code imports and app starts without errors |
 | Refactoring | Refactor as you go - do not accumulate tech debt |
