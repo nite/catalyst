@@ -16,7 +16,9 @@ Catalyst is a complete mobile-first data visualization platform that allows user
 
 - **15+ Curated Datasets** from trusted sources (data.gov, World Bank, Our World in Data, NOAA, US Census)
 - **Smart Visualization Engine** that automatically detects data types and suggests appropriate chart types
-- **Interactive Filters** including date ranges, category selectors, and numeric range sliders
+- **Interactive Filters** with active filter chips for quick management and removal
+- **KPI Summary Strip** showing dataset statistics at a glance (row count, time range, metrics)
+- **Dataset Coverage Panel** with detailed information about time range, geography, and data quality
 - **Mobile-First Design** with responsive layouts and touch-friendly interactions
 - **Real-Time Data Fetching** from multiple open data providers
 - **Chart.js Integration** for beautiful, interactive visualizations
