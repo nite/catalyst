@@ -846,9 +846,16 @@ export default function DatasetViewer() {
 										<div>
 											<strong>Category:</strong> {dataset.category || "N/A"}
 										</div>
-										<div className="text-xs text-gray-500 mt-1">
-											Last updated: Available on demand
-										</div>
+										{dataset.updated_at ? (
+											<div className="text-xs text-gray-500 mt-1">
+												Last updated:{" "}
+												{new Date(dataset.updated_at).toLocaleDateString()}
+											</div>
+										) : (
+											<div className="text-xs text-gray-500 mt-1">
+												Refresh: On demand
+											</div>
+										)}
 									</div>
 								</div>
 
@@ -859,15 +866,17 @@ export default function DatasetViewer() {
 									</div>
 									<div className="text-sm text-gray-700">
 										<div>
-											<strong>Completeness:</strong>{" "}
-											{analysis.statistics?.total_rows > 0
-												? "✓ Good"
-												: "⚠ Limited"}
+											<strong>Dataset Size:</strong>{" "}
+											{analysis.statistics?.total_rows > 1000
+												? "✓ Comprehensive"
+												: analysis.statistics?.total_rows > 0
+													? "⚠ Limited"
+													: "❌ Empty"}
 										</div>
 										<div>
-											<strong>Data Types:</strong>{" "}
+											<strong>Columns:</strong>{" "}
 											{analysis.columns
-												? `${analysis.columns.length} columns`
+												? `${analysis.columns.length} defined`
 												: "N/A"}
 										</div>
 									</div>
