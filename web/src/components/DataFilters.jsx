@@ -412,10 +412,11 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
 									type="button"
 									data-testid={`filter-${column}-option`}
 									onClick={() => toggleOption(option)}
-									className={`px-2 py-1 text-xs rounded-full border transition ${isSelected
+									className={`px-2 py-1 text-xs rounded-full border transition ${
+										isSelected
 											? "border-primary-500 bg-primary-50 text-primary-700"
 											: "border-gray-200 text-gray-600 hover:bg-gray-50"
-										}`}
+									}`}
 								>
 									{option}
 								</button>
@@ -461,10 +462,11 @@ export default function DataFilters({ filters, currentFilters, onChange }) {
 			{/* Filter Panel */}
 			<div
 				data-testid="filters-panel"
-				className={`border border-gray-200 p-2 ${showMobileFilters
+				className={`border border-gray-200 p-2 ${
+					showMobileFilters
 						? "fixed z-50 left-2 right-2 top-20 max-h-[70vh] overflow-y-auto bg-white"
 						: "hidden lg:block max-h-[calc(100vh-8rem)] overflow-y-auto"
-					}`}
+				}`}
 			>
 				<div className="flex items-center justify-between mb-2">
 					<h3 className="text-sm font-semibold text-gray-900 flex items-center">
