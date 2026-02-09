@@ -72,9 +72,9 @@ echo ""
 # Validate YAML syntax
 echo "📝 Validating YAML files..."
 if command -v python3 &> /dev/null; then
-    if python3 -c "import yaml" 2>&1 > /dev/null; then
+    if python3 -c "import yaml" > /dev/null 2>&1; then
         if [ -f "koyeb.yaml" ]; then
-            if python3 -c "import yaml; yaml.safe_load(open('koyeb.yaml'))" 2>&1 > /dev/null; then
+            if python3 -c "import yaml; yaml.safe_load(open('koyeb.yaml'))" > /dev/null 2>&1; then
                 success "koyeb.yaml is valid YAML"
             else
                 error "koyeb.yaml has YAML syntax errors"
@@ -82,7 +82,7 @@ if command -v python3 &> /dev/null; then
         fi
         
         if [ -f ".koyeb/config.yaml" ]; then
-            if python3 -c "import yaml; yaml.safe_load(open('.koyeb/config.yaml'))" 2>&1 > /dev/null; then
+            if python3 -c "import yaml; yaml.safe_load(open('.koyeb/config.yaml'))" > /dev/null 2>&1; then
                 success ".koyeb/config.yaml is valid YAML"
             else
                 error ".koyeb/config.yaml has YAML syntax errors"

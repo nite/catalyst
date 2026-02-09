@@ -116,7 +116,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        status=$(koyeb service get "$SERVICE_NAME" --output json | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+        # Try to use jq if available, otherwise fallback to grep
+        if command -v jq &> /dev/null; then
+            status=$(koyeb service get "$SERVICE_NAME" --output json 2>/dev/null | jq -r '.status // "unknown"')
+        else
+            status=$(koyeb service get "$SERVICE_NAME" --output json 2>/dev/null | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+        fi
         
         if [ "$status" = "healthy" ]; then
             echo ""
@@ -147,7 +152,11 @@ echo "🎉 Deployment initiated successfully!"
 echo ""
 
 # Get service URL
-SERVICE_URL=$(koyeb service get "$SERVICE_NAME" --output json 2>/dev/null | grep -o '"public_domain":"[^"]*"' | cut -d'"' -f4 || echo "")
+if command -v jq &> /dev/null; then
+    SERVICE_URL=$(koyeb service get "$SERVICE_NAME" --output json 2>/dev/null | jq -r '.public_domain // ""')
+else
+    SERVICE_URL=$(koyeb service get "$SERVICE_NAME" --output json 2>/dev/null | grep -o '"public_domain":"[^"]*"' | cut -d'"' -f4 || echo "")
+fi
 
 if [ -n "$SERVICE_URL" ]; then
     echo "🌐 Your app will be available at:"
