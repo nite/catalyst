@@ -159,8 +159,8 @@ def run_all_tests():
         return False
     except requests.exceptions.ConnectionError:
         print("\n❌ ERROR: Cannot connect to API server at", BASE_URL)
-        print("Make sure the backend server is running:")
-        print("  cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000")
+        print("Make sure the api server is running:")
+        print("  cd api && uvicorn app.main:app --host 0.0.0.0 --port 8000")
         return False
 
 if __name__ == "__main__":

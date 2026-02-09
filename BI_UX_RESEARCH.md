@@ -34,7 +34,7 @@ This document captures:
 - Chart responsiveness updated to fit the new layout.
 - Simple load animations (rise/fade) for hero and cards.
 - Playwright tests for dataset browsing and switching.
-- Basic frontend CI workflow for lint/build.
+- Basic web CI workflow for lint/build.
 
 ## Future plans and ideas
 - Add an answer-first KPI strip that summarizes the dataset (row count, time range, max/min values).

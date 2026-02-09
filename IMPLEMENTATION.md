@@ -6,7 +6,7 @@ A complete, production-ready mobile-first data visualization platform that allow
 
 ## Key Components
 
-### Backend (Python/FastAPI)
+### API (Python/FastAPI)
 - **4 REST API endpoints**
   - `GET /datasets` - List all datasets with filtering
   - `GET /datasets/{id}` - Get dataset details
@@ -25,7 +25,7 @@ A complete, production-ready mobile-first data visualization platform that allow
   - Suggests appropriate chart types based on data patterns
   - Generates filter configurations
 
-### Frontend (React/Vite)
+### Web (React/Vite)
 - **3 Main Pages**
   - Home page with features overview
   - Dataset browser with search and filters
@@ -46,25 +46,25 @@ A complete, production-ready mobile-first data visualization platform that allow
   - Real-time chart updates
 
 ### Testing
-- **16 Backend tests** - All passing
+- **16 API tests** - All passing
 - **9 Integration tests** - All passing
 - Tests cover all API endpoints and data providers
 
 ### Deployment
 - **Render configuration** (render.yaml)
-- Backend as Web Service
-- Frontend as Static Site
+- API as Web Service
+- Web as Static Site
 - Automatic environment variable configuration
 
 ## Technical Stack
 
-**Backend:**
+**API:**
 - Python 3.11+
 - FastAPI
 - Pandas
 - Requests
 
-**Frontend:**
+**Web:**
 - React 18
 - Vite
 - TailwindCSS
@@ -86,7 +86,7 @@ A complete, production-ready mobile-first data visualization platform that allow
 
 ```
 catalyst/
-├── backend/
+├── api/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py          # FastAPI server
@@ -94,7 +94,7 @@ catalyst/
 │   │   └── analyzer.py      # Visualization engine
 │   ├── requirements.txt
 │   └── test_api.py
-├── frontend/
+├── web/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Layout.jsx
@@ -126,41 +126,41 @@ catalyst/
    - Select `render.yaml`
    - Deploy both services
 3. **Access the app**
-   - Frontend URL will be provided by Render
-   - Backend API will be auto-linked
+   - Web URL will be provided by Render
+   - API will be auto-linked
 
 ## Local Development
 
-**Backend:**
+**API:**
 ```bash
-cd backend
+cd api
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend:**
+**Web:**
 ```bash
-cd frontend
+cd web
 npm install
 npm run dev
 ```
 
 **Access:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
+- Web: http://localhost:3000
+- API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
 ## Testing
 
 ```bash
-# Backend tests
-cd backend && pytest test_api.py -v
+# API tests
+cd api && pytest test_api.py -v
 
 # Integration tests  
 python tests/integration_test.py
 
-# Frontend build
-cd frontend && npm run build
+# Web build
+cd web && npm run build
 ```
 
 ---

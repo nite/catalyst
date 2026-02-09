@@ -11,10 +11,10 @@ alwaysApply: true
 
 All magic strings, numbers, and configuration values MUST be centralized.
 
-- Backend: api/compass_api/core/constants.py
-- Frontend: web/src/lib/constants.ts
+- API: api/compass_api/core/constants.py
+- Web: web/src/lib/constants.ts
 
-## Backend Constants Pattern
+## API Constants Pattern
 
 ```python
 from typing import Final
@@ -26,7 +26,7 @@ class LLMDefaults:
     TEMPERATURE: Final[float] = 0.0
 ```
 
-## Frontend Constants Pattern
+## Web Constants Pattern
 
 ```typescript
 export const LLM_MODELS = [

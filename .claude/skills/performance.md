@@ -15,7 +15,7 @@ alwaysApply: true
 - Parallelize independent requests.
 - Use React Query caching with proper staleTime.
 
-## Backend Performance
+## API Performance
 
 - Parallelize I/O (asyncio.gather).
 - Cache expensive operations.

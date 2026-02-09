@@ -1,5 +1,5 @@
 ---
-description: TypeScript, React, and frontend patterns.
+description: TypeScript, React, and web patterns.
 globs:
   - "**/*.ts"
   - "**/*.tsx"

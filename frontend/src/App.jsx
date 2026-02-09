@@ -1,9 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
-import Home from './components/Home'
-import DatasetBrowser from './components/DatasetBrowser'
-import DatasetViewer from './components/DatasetViewer'
-import { HeaderProvider } from './components/HeaderContext'
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import DatasetBrowser from "./components/DatasetBrowser";
+import DatasetViewer from "./components/DatasetViewer";
+import { HeaderProvider } from "./components/HeaderContext";
+import Home from "./components/Home";
+import Layout from "./components/Layout";
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         </Layout>
       </HeaderProvider>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;

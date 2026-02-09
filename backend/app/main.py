@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from typing import Optional, List
+from typing import Optional
 import logging
 from pathlib import Path
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Catalyst API",
     description="Mobile-first data visualization platform API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 api_router = APIRouter(prefix="/api")
@@ -42,7 +42,7 @@ async def root():
     return {
         "message": "Catalyst API is running",
         "version": "1.0.0",
-        "status": "healthy"
+        "status": "healthy",
     }
 
 
@@ -50,11 +50,11 @@ async def root():
 async def list_datasets(
     provider: Optional[str] = None,
     category: Optional[str] = None,
-    limit: int = Query(default=50, ge=1, le=100)
+    limit: int = Query(default=50, ge=1, le=100),
 ):
     """
     List all available datasets with metadata
-    
+
     Query Parameters:
     - provider: Filter by data provider (data.gov, worldbank, owid, noaa, census)
     - category: Filter by category (economy, health, climate, demographics, etc.)
@@ -62,20 +62,17 @@ async def list_datasets(
     """
     try:
         datasets = get_all_datasets()
-        
+
         # Apply filters
         if provider:
             datasets = [d for d in datasets if d.get("provider") == provider]
         if category:
             datasets = [d for d in datasets if d.get("category") == category]
-        
+
         # Limit results
         datasets = datasets[:limit]
-        
-        return {
-            "total": len(datasets),
-            "datasets": datasets
-        }
+
+        return {"total": len(datasets), "datasets": datasets}
     except Exception as e:
         logger.error(f"Error listing datasets: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -89,7 +86,9 @@ async def get_dataset(dataset_id: str):
     try:
         dataset = get_dataset_by_id(dataset_id)
         if not dataset:
-            raise HTTPException(status_code=404, detail=f"Dataset {dataset_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Dataset {dataset_id} not found"
+            )
         return dataset
     except HTTPException:
         raise
@@ -105,11 +104,11 @@ async def get_dataset_data(
     offset: int = Query(default=0, ge=0),
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    filters: Optional[str] = None
+    filters: Optional[str] = None,
 ):
     """
     Fetch dataset data with filtering and pagination
-    
+
     Query Parameters:
     - limit: Maximum rows to return (1-1000)
     - offset: Number of rows to skip
@@ -124,7 +123,7 @@ async def get_dataset_data(
             offset=offset,
             date_from=date_from,
             date_to=date_to,
-            filters=filters
+            filters=filters,
         )
         return data
     except HTTPException:
@@ -136,12 +135,11 @@ async def get_dataset_data(
 
 @api_router.post("/datasets/{dataset_id}/analyze")
 async def analyze_dataset_endpoint(
-    dataset_id: str,
-    sample_size: int = Query(default=1000, ge=100, le=10000)
+    dataset_id: str, sample_size: int = Query(default=1000, ge=100, le=10000)
 ):
     """
     Analyze dataset and return visualization recommendations
-    
+
     Returns:
     - Suggested chart types
     - Filter configurations
@@ -151,14 +149,16 @@ async def analyze_dataset_endpoint(
     try:
         dataset = get_dataset_by_id(dataset_id)
         if not dataset:
-            raise HTTPException(status_code=404, detail=f"Dataset {dataset_id} not found")
-        
+            raise HTTPException(
+                status_code=404, detail=f"Dataset {dataset_id} not found"
+            )
+
         # Fetch sample data for analysis
         data = fetch_dataset_data(dataset_id=dataset_id, limit=sample_size)
-        
+
         # Analyze and return recommendations
         analysis = analyze_dataset(data, dataset)
-        
+
         return analysis
     except HTTPException:
         raise

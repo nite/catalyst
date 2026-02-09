@@ -1,5 +1,5 @@
 ---
-description: FastAPI, Pydantic, and backend logging rules.
+description: FastAPI, Pydantic, and api logging rules.
 globs:
   - "**/*.py"
 alwaysApply: true
@@ -69,7 +69,7 @@ async def create_evaluation(
 
 ## Logging (CRITICAL)
 
-**Use loguru for backend. Never use console.log or print for logging.**
+**Use loguru for api. Never use console.log or print for logging.**
 
 - Use {} formatting style, not printf.
 - Use logger.exception() inside except blocks.

@@ -17,20 +17,20 @@ The Blueprint configuration has been validated and all checks pass:
 - ✅ YAML syntax is valid
 - ✅ Two services configured correctly:
   - `catalyst-api` (Python web service)
-  - `catalyst-frontend` (Static site)
+  - `catalyst-web` (Static site)
 - ✅ No region field in static site (previously fixed)
 - ✅ All required fields present
 - ✅ Environment variables properly configured
 - ✅ Service references are correct
 
-### 2. Backend Service Configuration ✅
+### 2. API Service Configuration ✅
 
 **Service:** catalyst-api  
 **Type:** Web Service  
 **Environment:** Python 3.11
 
-- ✅ Build command: `cd backend && pip install -r requirements.txt`
-- ✅ Start command: `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- ✅ Build command: `cd api && pip install -r requirements.txt`
+- ✅ Start command: `cd api && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - ✅ Health check path: `/health`
 - ✅ Region: oregon
 - ✅ Dependencies file exists (requirements.txt)
@@ -41,14 +41,14 @@ The Blueprint configuration has been validated and all checks pass:
 - `PYTHON_VERSION: "3.11.0"` (string format ✅)
 - `PORT` - Automatically set by Render ✅
 
-### 3. Frontend Service Configuration ✅
+### 3. Web Service Configuration ✅
 
-**Service:** catalyst-frontend  
+**Service:** catalyst-web  
 **Type:** Static Site  
 **Environment:** Static
 
-- ✅ Build command: `cd frontend && npm install && npm run build`
-- ✅ Static publish path: `./frontend/dist`
+- ✅ Build command: `cd web && npm install && npm run build`
+- ✅ Static publish path: `./web/dist`
 - ✅ Pull request previews enabled
 - ✅ Security headers configured
 - ✅ SPA routing configured (rewrite all to /index.html)
@@ -57,13 +57,13 @@ The Blueprint configuration has been validated and all checks pass:
 - ✅ index.html exists
 
 **Environment Variables:**
-- `VITE_API_URL` - Dynamically set from backend service URL ✅
+- `VITE_API_URL` - Dynamically set from api service URL ✅
 
 ### 4. File Structure ✅
 
 ```
 catalyst/
-├── backend/
+├── api/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py (contains health endpoint)
@@ -71,7 +71,7 @@ catalyst/
 │   │   └── analyzer.py
 │   ├── requirements.txt (FastAPI, Uvicorn, etc.)
 │   └── test_api.py
-├── frontend/
+├── web/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── utils/
@@ -94,7 +94,7 @@ catalyst/
 3. ✅ Previously fixed: Removed `region` field from static site
 
 ### Current Configuration:
-- Backend uses automatic `$PORT` variable from Render
+- API uses automatic `$PORT` variable from Render
 - All environment variables use string values
 - Static site has no region specification
 - Service cross-references are correct
@@ -121,7 +121,7 @@ catalyst/
 4. **Review Configuration:**
    - You should see 2 services:
      - catalyst-api (Web Service)
-     - catalyst-frontend (Static Site)
+     - catalyst-web (Static Site)
    - Review the configuration details
 
 5. **Deploy:**
@@ -138,20 +138,20 @@ If your repository has auto-deploy enabled:
 
 ## Expected Build Process
 
-### Backend Build:
+### API Build:
 1. Render pulls the repository
-2. Runs: `cd backend && pip install -r requirements.txt`
+2. Runs: `cd api && pip install -r requirements.txt`
 3. Installs: FastAPI, Uvicorn, Pandas, etc.
 4. Starts: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 5. Health check: Pings `/health` endpoint
 6. Service goes live when health check passes
 
-### Frontend Build:
+### Web Build:
 1. Render pulls the repository
-2. Runs: `cd frontend && npm install && npm run build`
+2. Runs: `cd web && npm install && npm run build`
 3. Installs: React, Vite, TailwindCSS, Chart.js, etc.
-4. Builds: Production bundle in `frontend/dist/`
-5. Deploys: Static files from `./frontend/dist`
+4. Builds: Production bundle in `web/dist/`
+5. Deploys: Static files from `./web/dist`
 6. Service goes live when build completes
 
 ---
@@ -160,20 +160,20 @@ If your repository has auto-deploy enabled:
 
 ### Service URLs (after deployment):
 
-**Backend API:**
+**API:**
 - URL: `https://catalyst-api.onrender.com`
 - Health: `https://catalyst-api.onrender.com/health`
 - API Docs: `https://catalyst-api.onrender.com/docs`
 - Datasets: `https://catalyst-api.onrender.com/datasets`
 
-**Frontend:**
-- URL: `https://catalyst-frontend.onrender.com`
-- Auto-configured with backend URL via `VITE_API_URL`
+**Web:**
+- URL: `https://catalyst-web.onrender.com`
+- Auto-configured with api URL via `VITE_API_URL`
 
 ### Verification Steps:
 
 ```bash
-# Check backend health
+# Check api health
 curl https://catalyst-api.onrender.com/health
 # Expected: {"status": "healthy", "service": "catalyst-api"}
 
@@ -181,15 +181,15 @@ curl https://catalyst-api.onrender.com/health
 curl https://catalyst-api.onrender.com/datasets
 # Expected: JSON with 15 datasets
 
-# Check frontend
-curl -I https://catalyst-frontend.onrender.com
+# Check web
+curl -I https://catalyst-web.onrender.com
 # Expected: HTTP 200 OK
 ```
 
 ### Monitoring:
 
-- Backend logs: Available in Render dashboard
-- Frontend logs: Build logs in Render dashboard
+- API logs: Available in Render dashboard
+- Web logs: Build logs in Render dashboard
 - Health checks: Automatic monitoring via `/health` endpoint
 - Metrics: Available in Render service dashboard
 
@@ -199,13 +199,13 @@ curl -I https://catalyst-frontend.onrender.com
 
 ### If Build Fails:
 
-**Backend Issues:**
+**API Issues:**
 - Check Python version compatibility
 - Verify all dependencies in requirements.txt
 - Check build logs for pip errors
 - Ensure PORT variable is used correctly
 
-**Frontend Issues:**
+**Web Issues:**
 - Check Node.js version compatibility
 - Verify all dependencies in package.json
 - Check build logs for npm errors
@@ -214,7 +214,7 @@ curl -I https://catalyst-frontend.onrender.com
 ### If Services Don't Connect:
 
 - Verify `VITE_API_URL` is set correctly
-- Check CORS configuration in backend
+- Check CORS configuration in api
 - Verify service names match in render.yaml
 - Check network policies in Render dashboard
 

@@ -24,7 +24,7 @@ Catalyst is a complete mobile-first data visualization platform that allows user
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Frontend (React)                      │
+│                    Web (React)                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │   Dataset    │  │    Chart     │  │   Filters    │  │
 │  │   Browser    │  │   Renderer   │  │  Component   │  │
@@ -32,7 +32,7 @@ Catalyst is a complete mobile-first data visualization platform that allows user
 └─────────────────────────────────────────────────────────┘
                            ↕ REST API
 ┌─────────────────────────────────────────────────────────┐
-│                   Backend (FastAPI)                      │
+│                   API (FastAPI)                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │   Dataset    │  │ Visualization│  │     Data     │  │
 │  │   Catalog    │  │   Analyzer   │  │   Fetcher    │  │
@@ -49,8 +49,8 @@ Catalyst is a complete mobile-first data visualization platform that allows user
 
 ### Prerequisites
 
-- **Python 3.11+** for backend
-- **Node.js 18+** for frontend
+- **Python 3.11+** for api
+- **Node.js 18+** for web
 - **npm or yarn** for package management
 
 ### Local Development Setup
@@ -62,10 +62,10 @@ git clone https://github.com/nite/catalyst.git
 cd catalyst
 ```
 
-#### 2. Backend Setup
+#### 2. API Setup
 
 ```bash
-cd backend
+cd api
 
 # Create virtual environment
 python -m venv venv
@@ -74,7 +74,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the backend server
+# Run the api server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -82,10 +82,10 @@ The API will be available at `http://localhost:8000`
 
 API Documentation: `http://localhost:8000/docs`
 
-#### 3. Frontend Setup
+#### 3. Web Setup
 
 ```bash
-cd frontend
+cd web
 
 # Install dependencies
 npm install
@@ -94,7 +94,7 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000`
+The web will be available at `http://localhost:3000`
 
 ## 📡 API Endpoints
 
@@ -154,7 +154,7 @@ curl -X POST http://localhost:8000/datasets/world-gdp/analyze
 
 ## 🎨 Smart Visualization Engine
 
-The backend automatically analyzes datasets and recommends appropriate chart types:
+The api automatically analyzes datasets and recommends appropriate chart types:
 
 | Data Pattern | Recommended Chart | Use Case |
 |-------------|-------------------|----------|
@@ -173,10 +173,10 @@ The backend automatically analyzes datasets and recommends appropriate chart typ
 
 ## 🧪 Testing
 
-### Backend Tests
+### API Tests
 
 ```bash
-cd backend
+cd api
 pytest test_api.py -v
 ```
 
@@ -187,10 +187,10 @@ Tests cover:
 - ✅ Filter functionality
 - ✅ Mock data generation
 
-### Frontend Tests
+### Web Tests
 
 ```bash
-cd frontend
+cd web
 npm test
 ```
 
@@ -212,17 +212,17 @@ The project includes a `render.yaml` configuration for easy deployment to Render
 1. **Connect GitHub Repository** to Render
 2. **Create Blueprint** from `render.yaml`
 3. **Deploy** - Render will automatically:
-   - Deploy the FastAPI backend as a Web Service
-   - Deploy the React frontend as a Static Site
+   - Deploy the FastAPI api as a Web Service
+   - Deploy the React web as a Static Site
    - Set up environment variables
-   - Configure CORS for frontend-backend communication
+   - Configure CORS for web-api communication
 
 ### Environment Variables
 
 The `render.yaml` automatically configures:
-- `VITE_API_URL` - Backend API URL (auto-linked)
+- `VITE_API_URL` - API URL (auto-linked)
 - `PORT` - Service port
-- `PYTHON_VERSION` - Python version for backend
+- `PYTHON_VERSION` - Python version for api
 
 ### Dataset API Keys
 
@@ -254,7 +254,7 @@ Registration and docs pages:
 
 ## 🛠️ Technology Stack
 
-### Frontend
+### Web
 - **React 18.2** - UI framework
 - **Vite** - Build tool and dev server
 - **TailwindCSS** - Utility-first CSS framework
@@ -264,7 +264,7 @@ Registration and docs pages:
 - **React Router** - Client-side routing
 - **React Icons** - Icon library
 
-### Backend
+### API
 - **FastAPI** - Modern Python web framework
 - **Uvicorn** - ASGI server
 - **Pandas** - Data manipulation and analysis
@@ -285,7 +285,7 @@ Registration and docs pages:
 
 ## 🔒 Security & Best Practices
 
-- ✅ CORS configured for secure frontend-backend communication
+- ✅ CORS configured for secure web-api communication
 - ✅ Input validation with Pydantic models
 - ✅ Error handling and logging
 - ✅ Rate limiting ready (can be added via middleware)

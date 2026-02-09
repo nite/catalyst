@@ -1,14 +1,14 @@
-import { Link, useLocation } from 'react-router-dom'
-import { FiMenu, FiX, FiBarChart2 } from 'react-icons/fi'
-import { useState } from 'react'
-import { useHeader } from './HeaderContext'
+import { useState } from "react";
+import { FiBarChart2, FiMenu, FiX } from "react-icons/fi";
+import { Link, useLocation } from "react-router-dom";
+import { useHeader } from "./HeaderContext";
 
 export default function Layout({ children }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const location = useLocation()
-  const { header } = useHeader()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const { header } = useHeader();
 
-  const isActive = (path) => location.pathname === path
+  const isActive = (path) => location.pathname === path;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,16 +28,17 @@ export default function Layout({ children }) {
             <div className="hidden md:flex items-center space-x-6 text-sm">
               <Link
                 to="/"
-                className={`${isActive('/') ? 'text-primary-600' : 'text-gray-700'
+                className={`${isActive("/") ? "text-primary-600" : "text-gray-700"
                   } hover:text-primary-600 transition-colors font-medium`}
               >
                 Home
               </Link>
               <Link
                 to="/datasets"
-                className={`${isActive('/datasets') || location.pathname.startsWith('/datasets/')
-                    ? 'text-primary-600'
-                    : 'text-gray-700'
+                className={`${isActive("/datasets") ||
+                    location.pathname.startsWith("/datasets/")
+                    ? "text-primary-600"
+                    : "text-gray-700"
                   } hover:text-primary-600 transition-colors font-medium`}
               >
                 Explore Datasets
@@ -46,6 +47,7 @@ export default function Layout({ children }) {
 
             {/* Mobile menu button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg hover:bg-gray-100"
             >
@@ -65,7 +67,7 @@ export default function Layout({ children }) {
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block py-2 ${isActive('/') ? 'text-primary-600' : 'text-gray-700'
+                className={`block py-2 ${isActive("/") ? "text-primary-600" : "text-gray-700"
                   } hover:text-primary-600 font-medium`}
               >
                 Home
@@ -73,9 +75,10 @@ export default function Layout({ children }) {
               <Link
                 to="/datasets"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block py-2 ${isActive('/datasets') || location.pathname.startsWith('/datasets/')
-                    ? 'text-primary-600'
-                    : 'text-gray-700'
+                className={`block py-2 ${isActive("/datasets") ||
+                    location.pathname.startsWith("/datasets/")
+                    ? "text-primary-600"
+                    : "text-gray-700"
                   } hover:text-primary-600 font-medium`}
               >
                 Explore Datasets
@@ -84,11 +87,7 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        {header && (
-          <div className="py-1">
-            {header}
-          </div>
-        )}
+        {header && <div className="py-1">{header}</div>}
       </header>
 
       {/* Main Content */}
@@ -96,5 +95,5 @@ export default function Layout({ children }) {
         {children}
       </main>
     </div>
-  )
+  );
 }

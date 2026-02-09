@@ -1,46 +1,62 @@
-import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { FiSearch, FiFilter } from 'react-icons/fi'
-import { fetchDatasets } from '../utils/api'
+import { useCallback, useEffect, useState } from "react";
+import { FiFilter, FiSearch } from "react-icons/fi";
+import { Link, useSearchParams } from "react-router-dom";
+import { fetchDatasets } from "../utils/api";
 
 export default function DatasetBrowser() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [datasets, setDatasets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProvider, setSelectedProvider] = useState(searchParams.get('provider') || '')
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
+  const [searchParams] = useSearchParams();
+  const [datasets, setDatasets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState(
+    searchParams.get("provider") || "",
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") || "",
+  );
+
+  const loadDatasets = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = {};
+      if (selectedProvider) params.provider = selectedProvider;
+      if (selectedCategory) params.category = selectedCategory;
+
+      const data = await fetchDatasets(params);
+      setDatasets(data.datasets || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProvider, selectedCategory]);
 
   useEffect(() => {
-    loadDatasets()
-  }, [selectedProvider, selectedCategory])
+    loadDatasets();
+  }, [loadDatasets]);
 
-  const loadDatasets = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const params = {}
-      if (selectedProvider) params.provider = selectedProvider
-      if (selectedCategory) params.category = selectedCategory
+  const filteredDatasets = datasets.filter(
+    (ds) =>
+      ds.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ds.description.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-      const data = await fetchDatasets(params)
-      setDatasets(data.datasets || [])
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filteredDatasets = datasets.filter(ds =>
-    ds.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ds.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const providers = ['data.gov', 'worldbank', 'owid', 'noaa', 'census']
-  const categories = ['health', 'economy', 'climate', 'demographics', 'education', 'technology']
-  const activeFiltersCount = [searchTerm, selectedProvider, selectedCategory].filter(Boolean).length
+  const providers = ["data.gov", "worldbank", "owid", "noaa", "census"];
+  const categories = [
+    "health",
+    "economy",
+    "climate",
+    "demographics",
+    "education",
+    "technology",
+  ];
+  const activeFiltersCount = [
+    searchTerm,
+    selectedProvider,
+    selectedCategory,
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-4 h-full overflow-y-auto">
@@ -51,7 +67,10 @@ export default function DatasetBrowser() {
         </p>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 data-testid="datasets-title" className="text-3xl md:text-4xl font-bold text-gray-900 font-display">
+            <h1
+              data-testid="datasets-title"
+              className="text-3xl md:text-4xl font-bold text-gray-900 font-display"
+            >
               Explore Datasets
             </h1>
             <p className="text-gray-600">
@@ -92,8 +111,8 @@ export default function DatasetBrowser() {
               type="button"
               onClick={() => setSelectedCategory(category)}
               className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${selectedCategory === category
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white/70 text-gray-600 hover:bg-primary-100'
+                  ? "bg-primary-600 text-white"
+                  : "bg-white/70 text-gray-600 hover:bg-primary-100"
                 }`}
             >
               {category}
@@ -105,8 +124,8 @@ export default function DatasetBrowser() {
               type="button"
               onClick={() => setSelectedProvider(provider)}
               className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${selectedProvider === provider
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white/70 text-gray-600 hover:bg-primary-100'
+                  ? "bg-primary-600 text-white"
+                  : "bg-white/70 text-gray-600 hover:bg-primary-100"
                 }`}
             >
               {provider}
@@ -116,9 +135,9 @@ export default function DatasetBrowser() {
             <button
               type="button"
               onClick={() => {
-                setSelectedProvider('')
-                setSelectedCategory('')
-                setSearchTerm('')
+                setSelectedProvider("");
+                setSelectedCategory("");
+                setSearchTerm("");
               }}
               className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-gray-900 text-white"
             >
@@ -130,35 +149,45 @@ export default function DatasetBrowser() {
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="provider-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               <FiFilter className="inline mr-1" />
               Data Provider
             </label>
             <select
+              id="provider-select"
               data-testid="provider-select"
               value={selectedProvider}
               onChange={(e) => setSelectedProvider(e.target.value)}
               className="input-field"
             >
               <option value="">All Providers</option>
-              {providers.map(provider => (
-                <option key={provider} value={provider}>{provider}</option>
+              {providers.map((provider) => (
+                <option key={provider} value={provider}>
+                  {provider}
+                </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="category-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               <FiFilter className="inline mr-1" />
               Category
             </label>
             <select
+              id="category-select"
               data-testid="category-select"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="input-field"
             >
               <option value="">All Categories</option>
-              {categories.map(category => (
+              {categories.map((category) => (
                 <option key={category} value={category}>
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                 </option>
@@ -180,7 +209,11 @@ export default function DatasetBrowser() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">Error: {error}</p>
-          <button onClick={loadDatasets} className="btn-primary mt-2">
+          <button
+            type="button"
+            onClick={loadDatasets}
+            className="btn-primary mt-2"
+          >
             Retry
           </button>
         </div>
@@ -230,11 +263,13 @@ export default function DatasetBrowser() {
 
           {filteredDatasets.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600">No datasets found matching your criteria</p>
+              <p className="text-gray-600">
+                No datasets found matching your criteria
+              </p>
             </div>
           )}
         </>
       )}
     </div>
-  )
+  );
 }

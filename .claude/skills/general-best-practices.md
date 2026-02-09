@@ -21,7 +21,7 @@ alwaysApply: true
 | Edge cases | Handle null, undefined, empty, error, loading states |
 | Resource cleanup | useEffect cleanup, remove listeners, cancel subscriptions |
 | Dependencies | Do not add packages for trivial functionality |
-| Logging (CRITICAL) | loglevel (frontend), loguru (backend) - never use console.* |
+| Logging (CRITICAL) | loglevel (web), loguru (api) - never use console.* |
 | Code quality | Run make format and make check before completing |
 | Verification | Ensure code imports and app starts without errors |
 | Refactoring | Refactor as you go - do not accumulate tech debt |
