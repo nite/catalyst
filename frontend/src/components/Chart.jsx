@@ -38,9 +38,17 @@ export default function Chart({ data, chartConfig, analysis }) {
     // Prepare data based on chart type
     if (chart_type === 'line' || chart_type === 'bar') {
       // For line and bar charts
-      const labels = data.map(row => row[x_axis]).slice(0, 50)
+      const primaryValues = data.map((row) => Number(row[y_axis]))
+      const numericCount = primaryValues.filter((value) => Number.isFinite(value)).length
+      const shouldSwap = numericCount < Math.max(1, data.length * 0.5)
+
+      const labelKey = shouldSwap ? y_axis : x_axis
+      const valueKey = shouldSwap ? x_axis : y_axis
+      const labelText = shouldSwap ? x_axis : y_axis
+
+      const labels = data.map(row => row[labelKey]).slice(0, 50)
       const values = data.map((row, index) => {
-        const rawValue = row[y_axis]
+        const rawValue = row[valueKey]
         const numericValue = Number(rawValue)
         return Number.isFinite(numericValue) ? numericValue : index
       }).slice(0, 50)
@@ -49,7 +57,7 @@ export default function Chart({ data, chartConfig, analysis }) {
         labels,
         datasets: [
           {
-            label: y_axis,
+            label: labelText,
             data: values,
             borderColor: 'rgb(14, 165, 233)',
             backgroundColor: chart_type === 'bar'

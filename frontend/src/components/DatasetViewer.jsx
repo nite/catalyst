@@ -175,12 +175,12 @@ export default function DatasetViewer() {
     }
 
     if (['line', 'bar'].includes(chartType)) {
-      const preferredX = numericColumns[0] || allColumns[0] || ''
-      const preferredY = temporalColumns[0] || allColumns[0] || ''
-      if (preferredX && !numericColumns.includes(xAxis)) {
+      const preferredX = temporalColumns[0] || categoricalColumns[0] || allColumns[0] || ''
+      const preferredY = numericColumns[0] || allColumns[0] || ''
+      if (preferredX) {
         setXAxis(preferredX)
       }
-      if (preferredY && !temporalColumns.includes(yAxis)) {
+      if (preferredY) {
         setYAxis(preferredY)
       }
       return
@@ -196,7 +196,7 @@ export default function DatasetViewer() {
         setYAxis(scatterY)
       }
     }
-  }, [allColumns, analysis, chartType, numericColumns, temporalColumns, xAxis, yAxis])
+  }, [allColumns, analysis, categoricalColumns, chartType, numericColumns, temporalColumns])
 
   const selectedChart = useMemo(() => {
     if (!chartType) return null
