@@ -7,6 +7,11 @@ import {
 	fetchDatasetData,
 	fetchDatasets,
 } from "../utils/api";
+import {
+	initDuckDB,
+	loadJSONData,
+	query as duckQuery,
+} from "../utils/duckdb";
 import Chart from "./Chart";
 import DataFilters from "./DataFilters";
 import { useHeader } from "./HeaderContext";
@@ -16,7 +21,8 @@ export default function DatasetViewer() {
 	const navigate = useNavigate();
 	const [dataset, setDataset] = useState(null);
 	const [datasets, setDatasets] = useState([]);
-	const [data, setData] = useState(null);
+	const [chartData, setChartData] = useState(null); // Only chart data in memory
+	const [totalRows, setTotalRows] = useState(0); // For preview display
 	const [analysis, setAnalysis] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
@@ -30,6 +36,7 @@ export default function DatasetViewer() {
 	const [locationAxis, setLocationAxis] = useState("");
 	const [openAxisPicker, setOpenAxisPicker] = useState(null);
 	const [showPreview, setShowPreview] = useState(false);
+	const [previewData, setPreviewData] = useState([]); // Small preview sample
 	const { setHeader } = useHeader();
 
 	const loadDataset = useCallback(async () => {
@@ -82,7 +89,10 @@ export default function DatasetViewer() {
 
 	const loadData = useCallback(async () => {
 		try {
-			const params = { limit: 500 };
+			// Initialize DuckDB
+			await initDuckDB();
+
+			const params = { limit: 10000 }; // Load more data into DuckDB
 			const filterPayload = {};
 
 			Object.entries(filters).forEach(([key, value]) => {
@@ -107,8 +117,22 @@ export default function DatasetViewer() {
 				params.filters = JSON.stringify(filterPayload);
 			}
 
+			// Fetch data from API
 			const dataResponse = await fetchDatasetData(datasetId, params);
-			setData(dataResponse);
+
+			// Load into DuckDB - data is NOT kept in JS memory
+			await loadJSONData("dataset", dataResponse.data);
+
+			// Get total row count
+			const countResult = await duckQuery("SELECT COUNT(*) as count FROM dataset");
+			setTotalRows(countResult[0]?.count || 0);
+
+			// Get small preview sample (only 10 rows for preview)
+			const preview = await duckQuery("SELECT * FROM dataset LIMIT 10");
+			setPreviewData(preview);
+
+			// Clear the raw data from memory - it's now in DuckDB
+			console.log(`Loaded ${dataResponse.data.length} rows into DuckDB`);
 		} catch (err) {
 			console.error("Error loading data:", err);
 		}
@@ -289,6 +313,105 @@ export default function DatasetViewer() {
 			color_by: colorBy,
 		};
 	}, [categoryAxis, chartType, colorBy, locationAxis, valueAxis, xAxis, yAxis]);
+
+	// Query chart data from DuckDB when chart configuration changes
+	useEffect(() => {
+		const queryChartData = async () => {
+			if (!selectedChart || totalRows === 0) {
+				setChartData(null);
+				return;
+			}
+
+			try {
+				const { chart_type, x_axis, y_axis, category, value, location, color_by } = selectedChart;
+
+				let sql = "";
+
+				if (chart_type === "treemap") {
+					// Aggregate by category
+					sql = `
+						SELECT "${category}", SUM(CAST("${value}" AS DOUBLE)) as "${value}"
+						FROM dataset
+						WHERE "${category}" IS NOT NULL AND "${value}" IS NOT NULL
+						GROUP BY "${category}"
+						ORDER BY "${value}" DESC
+						LIMIT 50
+					`;
+				} else if (chart_type === "map") {
+					// Aggregate by location
+					sql = `
+						SELECT "${location}", SUM(CAST("${value}" AS DOUBLE)) as "${value}"
+						FROM dataset
+						WHERE "${location}" IS NOT NULL AND "${value}" IS NOT NULL
+						GROUP BY "${location}"
+						ORDER BY "${value}" DESC
+						LIMIT 50
+					`;
+				} else if (chart_type === "scatter") {
+					// For scatter, get raw data points (limited)
+					const xKey = Array.isArray(x_axis) ? x_axis[0] : x_axis;
+					const yKey = Array.isArray(y_axis) ? y_axis[0] : y_axis;
+					const colorKey = Array.isArray(color_by) && color_by.length > 0 ? color_by[0] : null;
+
+					if (colorKey) {
+						sql = `
+							SELECT "${xKey}", "${yKey}", "${colorKey}"
+							FROM dataset
+							WHERE "${xKey}" IS NOT NULL AND "${yKey}" IS NOT NULL
+							LIMIT 400
+						`;
+					} else {
+						sql = `
+							SELECT "${xKey}", "${yKey}"
+							FROM dataset
+							WHERE "${xKey}" IS NOT NULL AND "${yKey}" IS NOT NULL
+							LIMIT 400
+						`;
+					}
+				} else if (chart_type === "line" || chart_type === "bar") {
+					// Aggregate data for line/bar charts
+					const xKey = Array.isArray(x_axis) ? x_axis[0] : x_axis;
+					const yKeys = Array.isArray(y_axis) ? y_axis : [y_axis];
+					const colorKey = Array.isArray(color_by) && color_by.length > 0 ? color_by[0] : null;
+
+					if (colorKey) {
+						// Group by X and color
+						const yKey = yKeys[0];
+						sql = `
+							SELECT "${xKey}", "${colorKey}", SUM(CAST("${yKey}" AS DOUBLE)) as "${yKey}"
+							FROM dataset
+							WHERE "${xKey}" IS NOT NULL AND "${yKey}" IS NOT NULL
+							GROUP BY "${xKey}", "${colorKey}"
+							ORDER BY "${xKey}"
+							LIMIT 500
+						`;
+					} else {
+						// Group by X only
+						const selectClauses = yKeys.map(yKey => `SUM(CAST("${yKey}" AS DOUBLE)) as "${yKey}"`).join(", ");
+						sql = `
+							SELECT "${xKey}", ${selectClauses}
+							FROM dataset
+							WHERE "${xKey}" IS NOT NULL
+							GROUP BY "${xKey}"
+							ORDER BY "${xKey}"
+							LIMIT 100
+						`;
+					}
+				}
+
+				if (sql) {
+					const result = await duckQuery(sql);
+					setChartData(result);
+					console.log(`Queried ${result.length} rows for chart from DuckDB`);
+				}
+			} catch (err) {
+				console.error("Error querying chart data:", err);
+				setChartData(null);
+			}
+		};
+
+		queryChartData();
+	}, [selectedChart, totalRows]);
 
 	const formatAxisList = useCallback((values) => {
 		if (!values || values.length === 0) return "Select";
@@ -643,9 +766,9 @@ export default function DatasetViewer() {
 						data-testid="chart-section"
 						className="flex-1 min-h-0 relative rounded-2xl border border-gray-200 bg-white/80 overflow-hidden"
 					>
-						{data && selectedChart ? (
+						{chartData && selectedChart ? (
 							<div className="h-full">
-								<Chart data={data.data} chartConfig={selectedChart} />
+								<Chart data={chartData} chartConfig={selectedChart} />
 							</div>
 						) : (
 							<div className="text-left text-sm text-gray-500 p-3">
@@ -653,7 +776,7 @@ export default function DatasetViewer() {
 							</div>
 						)}
 
-						{data?.data?.length > 0 && (
+						{previewData?.length > 0 && (
 							<div
 								className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${showPreview ? "max-h-80" : "h-10"
 									}`}
@@ -664,14 +787,14 @@ export default function DatasetViewer() {
 									className="w-full h-10 flex items-center justify-between px-3 text-xs uppercase tracking-[0.2em] text-gray-600"
 								>
 									<span>Data preview</span>
-									<span>{data.total?.toLocaleString()} rows</span>
+									<span>{totalRows?.toLocaleString()} rows</span>
 								</button>
 								{showPreview && (
 									<div className="max-h-[calc(20rem-2.5rem)] overflow-auto">
 										<table className="min-w-full divide-y divide-gray-200">
 											<thead className="bg-gray-50 sticky top-0">
 												<tr>
-													{Object.keys(data.data[0])
+													{Object.keys(previewData[0])
 														.slice(0, 6)
 														.map((key) => (
 															<th
@@ -684,7 +807,7 @@ export default function DatasetViewer() {
 												</tr>
 											</thead>
 											<tbody className="bg-white divide-y divide-gray-200">
-												{data.data.slice(0, 10).map((row, index) => {
+												{previewData.slice(0, 10).map((row, index) => {
 													const rowEntries = Object.entries(row).slice(0, 6);
 													return (
 														<tr key={`${rowEntries[0]?.[1]}-${index}`}>

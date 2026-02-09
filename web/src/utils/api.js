@@ -39,6 +39,24 @@ export const fetchDatasetData = async (datasetId, params = {}) => {
 	return response.data;
 };
 
+/**
+ * Fetch dataset data in Arrow format for DuckDB
+ * @param {string} datasetId - Dataset ID
+ * @param {object} params - Query parameters
+ * @returns {Promise<ArrayBuffer>} Arrow IPC data
+ */
+export const fetchDatasetDataArrow = async (datasetId, params = {}) => {
+	const response = await axios.get(
+		`${API_BASE_URL}/datasets/${datasetId}/data`,
+		{
+			params: { ...params, format: "arrow" },
+			responseType: "arraybuffer",
+			timeout: 30000,
+		},
+	);
+	return response.data;
+};
+
 export const analyzeDataset = async (datasetId, sampleSize = 1000) => {
 	const response = await api.post(`/datasets/${datasetId}/analyze`, null, {
 		params: { sample_size: sampleSize },
