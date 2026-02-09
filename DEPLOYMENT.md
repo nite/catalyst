@@ -10,10 +10,10 @@ static sites cannot have a region
 ```
 
 ### Root Cause
-The frontend service in `render.yaml` was configured as a static site (`env: static`) but included a `region: oregon` field on line 20. **Render does not allow region specification for static sites.**
+The web service in `render.yaml` was configured as a static site (`env: static`) but included a `region: oregon` field on line 20. **Render does not allow region specification for static sites.**
 
 ### Solution Applied
-✅ **Removed the `region: oregon` line from the frontend service definition**
+✅ **Removed the `region: oregon` line from the web service definition**
 
 ## Change Details
 
@@ -24,23 +24,23 @@ The frontend service in `render.yaml` was configured as a static site (`env: sta
 
 ### Diff
 ```diff
-   # Frontend Static Site
+   # Web Static Site
    - type: web
-     name: catalyst-frontend
+     name: catalyst-web
      env: static
 -    region: oregon
-     buildCommand: "cd frontend && npm install && npm run build"
-     staticPublishPath: ./frontend/dist
+     buildCommand: "cd web && npm install && npm run build"
+     staticPublishPath: ./web/dist
 ```
 
 ## Service Configuration
 
-### Backend (catalyst-api) ✅
+### API (catalyst-api) ✅
 - **Type**: Web Service
 - **Region**: `oregon` ✅ (Allowed for web services)
 - **Status**: Configuration unchanged
 
-### Frontend (catalyst-frontend) ✅
+### Web (catalyst-web) ✅
 - **Type**: Static Site
 - **Region**: Removed ❌ (Not allowed for static sites)
 - **Status**: Fixed and ready to deploy
@@ -99,21 +99,21 @@ If Render is connected to your GitHub repository with auto-deploy enabled:
 
 After successful deployment:
 
-- **Backend API**: `https://catalyst-api.onrender.com`
-- **Frontend**: `https://catalyst-frontend.onrender.com`
+- **API**: `https://catalyst-api.onrender.com`
+- **Web**: `https://catalyst-web.onrender.com`
 - **API Docs**: `https://catalyst-api.onrender.com/docs`
 
 ## Post-Deployment Verification
 
-### Backend Health Check
+### API Health Check
 ```bash
 curl https://catalyst-api.onrender.com/health
 # Expected: {"status": "healthy", "service": "catalyst-api"}
 ```
 
-### Frontend Access
+### Web Access
 ```bash
-curl -I https://catalyst-frontend.onrender.com
+curl -I https://catalyst-web.onrender.com
 # Expected: HTTP 200 OK
 ```
 
@@ -126,7 +126,7 @@ curl https://catalyst-api.onrender.com/datasets | jq '.total'
 ## Summary
 
 ✅ **Problem**: Static site configuration included forbidden `region` field  
-✅ **Solution**: Removed `region: oregon` from frontend service  
+✅ **Solution**: Removed `region: oregon` from web service  
 ✅ **Status**: Fixed, validated, committed, and pushed  
 ✅ **Next Step**: Deploy via Render Dashboard (recommended)  
 

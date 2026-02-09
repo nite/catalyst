@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from "vitest";
 
-describe('Catalyst Frontend', () => {
-  it('should have package.json', () => {
-    expect(true).toBe(true)
-  })
-})
+describe("Catalyst Frontend", () => {
+	it("should have package.json", () => {
+		expect(true).toBe(true);
+	});
+});

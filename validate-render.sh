@@ -40,51 +40,51 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 2: Checking directory structure"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-test -d backend && test -f backend/requirements.txt
-print_status $? "Backend directory and requirements.txt exist"
+test -d api && test -f api/requirements.txt
+print_status $? "API directory and requirements.txt exist"
 
-test -d backend/app && test -f backend/app/main.py
-print_status $? "Backend app structure exists"
+test -d api/app && test -f api/app/main.py
+print_status $? "API app structure exists"
 
-test -d frontend && test -f frontend/package.json
-print_status $? "Frontend directory and package.json exist"
+test -d web && test -f web/package.json
+print_status $? "Web directory and package.json exist"
 
-test -f frontend/vite.config.js
-print_status $? "Frontend vite.config.js exists"
+test -f web/vite.config.js
+print_status $? "Web vite.config.js exists"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3: Validating backend configuration"
+echo "Step 3: Validating api configuration"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Check health endpoint exists
-grep -q "def health_check" backend/app/main.py
+grep -q "def health_check" api/app/main.py
 print_status $? "Health check endpoint exists"
 
-grep -q "/health" backend/app/main.py
+grep -q "/health" api/app/main.py
 print_status $? "Health check path is /health"
 
 # Check FastAPI is in requirements
-grep -q "fastapi" backend/requirements.txt
+grep -q "fastapi" api/requirements.txt
 print_status $? "FastAPI is in requirements.txt"
 
-grep -q "uvicorn" backend/requirements.txt
+grep -q "uvicorn" api/requirements.txt
 print_status $? "Uvicorn is in requirements.txt"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4: Validating frontend configuration"
+echo "Step 4: Validating web configuration"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Check build script exists
-grep -q '"build"' frontend/package.json
+grep -q '"build"' web/package.json
 print_status $? "Build script exists in package.json"
 
-grep -q "vite build" frontend/package.json
+grep -q "vite build" web/package.json
 print_status $? "Vite build command configured"
 
 # Check index.html exists
-test -f frontend/index.html
+test -f web/index.html
 print_status $? "index.html exists"
 
 echo ""
@@ -104,39 +104,39 @@ warnings = []
 
 services = config.get('services', [])
 
-# Check backend service
-backend = services[0]
-if backend.get('type') != 'web':
-    errors.append("Backend type should be 'web'")
-if backend.get('env') != 'python':
-    errors.append("Backend env should be 'python'")
-if not backend.get('buildCommand'):
-    errors.append("Backend missing buildCommand")
-if not backend.get('startCommand'):
-    errors.append("Backend missing startCommand")
-if not backend.get('healthCheckPath'):
-    warnings.append("Backend missing healthCheckPath (recommended)")
+# Check api service
+api = services[0]
+if api.get('type') != 'web':
+    errors.append("API type should be 'web'")
+if api.get('env') != 'python':
+    errors.append("API env should be 'python'")
+if not api.get('buildCommand'):
+    errors.append("API missing buildCommand")
+if not api.get('startCommand'):
+    errors.append("API missing startCommand")
+if not api.get('healthCheckPath'):
+    warnings.append("API missing healthCheckPath (recommended)")
 
-# Check frontend service
-frontend = services[1]
-if frontend.get('type') != 'web':
-    errors.append("Frontend type should be 'web'")
-if frontend.get('env') != 'static':
-    errors.append("Frontend env should be 'static'")
-if not frontend.get('buildCommand'):
-    errors.append("Frontend missing buildCommand")
-if not frontend.get('staticPublishPath'):
-    errors.append("Frontend missing staticPublishPath")
-if 'region' in frontend:
-    errors.append("Frontend (static site) should NOT have a 'region' field")
+# Check web service
+web = services[1]
+if web.get('type') != 'web':
+    errors.append("Web type should be 'web'")
+if web.get('env') != 'static':
+    errors.append("Web env should be 'static'")
+if not web.get('buildCommand'):
+    errors.append("Web missing buildCommand")
+if not web.get('staticPublishPath'):
+    errors.append("Web missing staticPublishPath")
+if 'region' in web:
+    errors.append("Web (static site) should NOT have a 'region' field")
 
 # Check environment variable references
-frontend_env = frontend.get('envVars', [])
-for var in frontend_env:
+web_env = web.get('envVars', [])
+for var in web_env:
     if 'fromService' in var:
         ref_service = var['fromService'].get('name')
-        if ref_service != backend.get('name'):
-            errors.append(f"Frontend references non-existent service: {ref_service}")
+        if ref_service != api.get('name'):
+            errors.append(f"Web references non-existent service: {ref_service}")
 
 if errors:
     print("❌ ERRORS FOUND:")
@@ -162,9 +162,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 6: Testing build commands (dry-run)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-print_info "Backend build command: cd backend && pip install -r requirements.txt"
-print_info "Backend start command: cd backend && uvicorn app.main:app --host 0.0.0.0 --port \$PORT"
-print_info "Frontend build command: cd frontend && npm install && npm run build"
+print_info "API build command: cd api && pip install -r requirements.txt"
+print_info "API start command: cd api && uvicorn app.main:app --host 0.0.0.0 --port \$PORT"
+print_info "Web build command: cd web && npm install && npm run build"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════╗"

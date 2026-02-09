@@ -13,11 +13,11 @@ alwaysApply: true
 
 Every new feature MUST include tests before completion. No TODOs for tests later.
 
-## Backend Stack
+## API Stack
 
 - pytest, pytest-asyncio, pytest-mock, pytest-cov, httpx
 
-## Frontend Stack
+## Web Stack
 
 - Vitest, @testing-library/react, Storybook + Vitest, Playwright
 
@@ -39,8 +39,8 @@ Always run headless unless user explicitly requests headed or debug.
 
 ## Test Requirements for New Features
 
-- Backend: unit and integration tests.
-- Frontend: unit tests for utilities and hooks, E2E for workflows.
+- API: unit and integration tests.
+- Web: unit tests for utilities and hooks, E2E for workflows.
 
 ## Code Cleanup and Deduplication (CRITICAL)
 

@@ -40,25 +40,25 @@ annotation = annotations[key]
 
 - TypeScript: strict mode, no any unless absolutely necessary.
 - Python: full type hints on all functions, use Final for constants.
-- Validate at boundaries: Pydantic for API, Zod for frontend forms.
+- Validate at boundaries: Pydantic for API, Zod for web forms.
 
 ## DRY - Do Not Repeat Yourself
 
 - Extract shared logic into functions, hooks, or services.
 - Centralize constants in dedicated files.
-- Share types between frontend and backend where possible.
+- Share types between web and api where possible.
 
 ## Separation of Concerns
 
-- Backend: business logic, LLM orchestration, evaluation execution.
-- Frontend: UI state, formatting, user interactions.
-- Never format dates in backend - return ISO 8601 and format in frontend.
+- API: business logic, LLM orchestration, evaluation execution.
+- Web: UI state, formatting, user interactions.
+- Never format dates in api - return ISO 8601 and format in web.
 
-## Backend-Driven Architecture (CRITICAL)
+## API-Driven Architecture (CRITICAL)
 
-**Backend = source of truth for domain logic. Frontend = presentation only.**
+**API = source of truth for domain logic. Web = presentation only.**
 
-| Backend (Business Logic) | Frontend (Presentation) |
+| API (Business Logic) | Web (Presentation) |
 | --- | --- |
 | LLM orchestration | API calls, response handling |
 | Evaluation execution and scoring | UI state, user interactions |

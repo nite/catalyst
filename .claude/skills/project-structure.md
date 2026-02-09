@@ -9,10 +9,10 @@ alwaysApply: true
 
 The project structure is self-documenting - explore the codebase directly.
 
-- compass/ - Core Python package (evaluation logic + FastAPI API)
+- compass/ - Core Python package (evaluation logic + FastAPI)
 - compass/api/ - FastAPI application and routes
 - compass/core/ - Configuration and constants
-- web/ - React frontend (Vite + TypeScript + shadcn/ui)
+- web/ - React web (Vite + TypeScript + shadcn/ui)
 - web/src/ - Components, hooks, stores
 - tests/ - Python tests (pytest)
 - helm/ - Kubernetes Helm charts

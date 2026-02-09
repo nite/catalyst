@@ -1,18 +1,18 @@
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
-} from 'chart.js'
-import { Line, Bar, Scatter, Chart as ReactChart } from 'react-chartjs-2'
-import { TreemapController, TreemapElement } from 'chartjs-chart-treemap'
-import { useMemo } from 'react'
+} from "chart.js";
+import { TreemapController, TreemapElement } from "chartjs-chart-treemap";
+import { useMemo } from "react";
+import { Bar, Line, Chart as ReactChart, Scatter } from "react-chartjs-2";
 
 // Register ChartJS components
 ChartJS.register(
@@ -26,32 +26,36 @@ ChartJS.register(
   Legend,
   Filler,
   TreemapController,
-  TreemapElement
-)
+  TreemapElement,
+);
 
-export default function Chart({ data, chartConfig, analysis }) {
+export default function Chart({ data, chartConfig }) {
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) return null
+    if (!data || data.length === 0) return null;
 
-    const { chart_type, x_axis, y_axis, category, value } = chartConfig
+    const { chart_type, x_axis, y_axis, category, value } = chartConfig;
 
     // Prepare data based on chart type
-    if (chart_type === 'line' || chart_type === 'bar') {
+    if (chart_type === "line" || chart_type === "bar") {
       // For line and bar charts
-      const primaryValues = data.map((row) => Number(row[y_axis]))
-      const numericCount = primaryValues.filter((value) => Number.isFinite(value)).length
-      const shouldSwap = numericCount < Math.max(1, data.length * 0.5)
+      const primaryValues = data.map((row) => Number(row[y_axis]));
+      const numericCount = primaryValues.filter((value) =>
+        Number.isFinite(value),
+      ).length;
+      const shouldSwap = numericCount < Math.max(1, data.length * 0.5);
 
-      const labelKey = shouldSwap ? y_axis : x_axis
-      const valueKey = shouldSwap ? x_axis : y_axis
-      const labelText = shouldSwap ? x_axis : y_axis
+      const labelKey = shouldSwap ? y_axis : x_axis;
+      const valueKey = shouldSwap ? x_axis : y_axis;
+      const labelText = shouldSwap ? x_axis : y_axis;
 
-      const labels = data.map(row => row[labelKey]).slice(0, 50)
-      const values = data.map((row, index) => {
-        const rawValue = row[valueKey]
-        const numericValue = Number(rawValue)
-        return Number.isFinite(numericValue) ? numericValue : index
-      }).slice(0, 50)
+      const labels = data.map((row) => row[labelKey]).slice(0, 50);
+      const values = data
+        .map((row, index) => {
+          const rawValue = row[valueKey];
+          const numericValue = Number(rawValue);
+          return Number.isFinite(numericValue) ? numericValue : index;
+        })
+        .slice(0, 50);
 
       return {
         labels,
@@ -59,30 +63,31 @@ export default function Chart({ data, chartConfig, analysis }) {
           {
             label: labelText,
             data: values,
-            borderColor: 'rgb(14, 165, 233)',
-            backgroundColor: chart_type === 'bar'
-              ? 'rgba(14, 165, 233, 0.8)'
-              : 'rgba(14, 165, 233, 0.1)',
+            borderColor: "rgb(14, 165, 233)",
+            backgroundColor:
+              chart_type === "bar"
+                ? "rgba(14, 165, 233, 0.8)"
+                : "rgba(14, 165, 233, 0.1)",
             borderWidth: 2,
-            fill: chart_type === 'line',
-            tension: 0.4
-          }
-        ]
-      }
+            fill: chart_type === "line",
+            tension: 0.4,
+          },
+        ],
+      };
     }
 
-    if (chart_type === 'treemap') {
+    if (chart_type === "treemap") {
       const palette = [
-        '#14b8a6',
-        '#06b6d4',
-        '#3b82f6',
-        '#6366f1',
-        '#8b5cf6',
-        '#ec4899',
-        '#f97316',
-        '#eab308',
-        '#22c55e'
-      ]
+        "#14b8a6",
+        "#06b6d4",
+        "#3b82f6",
+        "#6366f1",
+        "#8b5cf6",
+        "#ec4899",
+        "#f97316",
+        "#eab308",
+        "#22c55e",
+      ];
 
       return {
         datasets: [
@@ -91,29 +96,29 @@ export default function Chart({ data, chartConfig, analysis }) {
             key: value,
             groups: [category],
             spacing: 1,
-            borderColor: 'rgba(255, 255, 255, 0.9)',
+            borderColor: "rgba(255, 255, 255, 0.9)",
             borderWidth: 1,
             backgroundColor: (ctx) => {
-              const index = ctx?.dataIndex ?? 0
-              return palette[index % palette.length]
-            }
-          }
-        ]
-      }
+              const index = ctx?.dataIndex ?? 0;
+              return palette[index % palette.length];
+            },
+          },
+        ],
+      };
     }
 
-    if (chart_type === 'map') {
-      const aggregated = {}
-      data.forEach(row => {
-        const location = row[chartConfig.location]
-        const val = parseFloat(row[chartConfig.value]) || 0
+    if (chart_type === "map") {
+      const aggregated = {};
+      data.forEach((row) => {
+        const location = row[chartConfig.location];
+        const val = parseFloat(row[chartConfig.value]) || 0;
         if (location) {
-          aggregated[location] = (aggregated[location] || 0) + val
+          aggregated[location] = (aggregated[location] || 0) + val;
         }
-      })
+      });
 
-      const labels = Object.keys(aggregated).slice(0, 20)
-      const values = Object.values(aggregated).slice(0, 20)
+      const labels = Object.keys(aggregated).slice(0, 20);
+      const values = Object.values(aggregated).slice(0, 20);
 
       return {
         labels,
@@ -121,107 +126,111 @@ export default function Chart({ data, chartConfig, analysis }) {
           {
             label: chartConfig.value,
             data: values,
-            borderColor: 'rgb(20, 184, 166)',
-            backgroundColor: 'rgba(20, 184, 166, 0.6)',
-            borderWidth: 2
-          }
-        ]
-      }
+            borderColor: "rgb(20, 184, 166)",
+            backgroundColor: "rgba(20, 184, 166, 0.6)",
+            borderWidth: 2,
+          },
+        ],
+      };
     }
 
-    if (chart_type === 'scatter') {
+    if (chart_type === "scatter") {
       // For scatter plots
-      const points = data.slice(0, 200).map(row => ({
+      const points = data.slice(0, 200).map((row) => ({
         x: parseFloat(row[x_axis]) || 0,
-        y: parseFloat(row[y_axis]) || 0
-      }))
+        y: parseFloat(row[y_axis]) || 0,
+      }));
 
       return {
         datasets: [
           {
             label: `${x_axis} vs ${y_axis}`,
             data: points,
-            backgroundColor: 'rgba(14, 165, 233, 0.6)',
-            borderColor: 'rgb(14, 165, 233)',
-            borderWidth: 1
-          }
-        ]
-      }
+            backgroundColor: "rgba(14, 165, 233, 0.6)",
+            borderColor: "rgb(14, 165, 233)",
+            borderWidth: 1,
+          },
+        ],
+      };
     }
 
-    return null
-  }, [data, chartConfig])
+    return null;
+  }, [data, chartConfig]);
 
-  const isCompact = typeof window !== 'undefined' && window.innerWidth < 768
+  const isCompact = typeof window !== "undefined" && window.innerWidth < 768;
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
+        position: "top",
         labels: {
           usePointStyle: true,
-          padding: 15
-        }
+          padding: 15,
+        },
       },
       tooltip: {
         enabled: true,
-        mode: 'index',
-        intersect: false
-      }
-    },
-    scales: ['treemap', 'pie'].includes(chartConfig.chart_type) ? undefined : {
-      x: {
-        grid: {
-          display: false
-        },
-        ticks: {
-          maxRotation: 45,
-          minRotation: 0,
-          autoSkip: true,
-          maxTicksLimit: isCompact ? 5 : 10
-        }
+        mode: "index",
+        intersect: false,
       },
-      y: {
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
+    },
+    scales: ["treemap", "pie"].includes(chartConfig.chart_type)
+      ? undefined
+      : {
+        x: {
+          grid: {
+            display: false,
+          },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: isCompact ? 5 : 10,
+          },
         },
-        ticks: {
-          callback: function (value) {
-            if (Math.abs(value) >= 1000000) {
-              return (value / 1000000).toFixed(1) + 'M'
-            } else if (Math.abs(value) >= 1000) {
-              return (value / 1000).toFixed(1) + 'K'
-            }
-            return value
-          }
-        }
-      }
-    }
-  }
+        y: {
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
+          },
+          ticks: {
+            callback: (value) => {
+              if (Math.abs(value) >= 1000000) {
+                return `${(value / 1000000).toFixed(1)}M`;
+              }
+              if (Math.abs(value) >= 1000) {
+                return `${(value / 1000).toFixed(1)}K`;
+              }
+              return value;
+            },
+          },
+        },
+      },
+  };
 
   if (!chartData) {
     return (
       <div className="text-center py-8 text-gray-600">
         No data available for visualization
       </div>
-    )
+    );
   }
 
-  const ChartComponent = {
-    line: Line,
-    bar: Bar,
-    scatter: Scatter,
-    treemap: ReactChart
-  }[chartConfig.chart_type] || Bar
+  const ChartComponent =
+    {
+      line: Line,
+      bar: Bar,
+      scatter: Scatter,
+      treemap: ReactChart,
+    }[chartConfig.chart_type] || Bar;
 
   return (
     <div className="w-full h-full" data-testid="chart-canvas">
-      {chartConfig.chart_type === 'treemap' ? (
+      {chartConfig.chart_type === "treemap" ? (
         <ChartComponent type="treemap" data={chartData} options={options} />
       ) : (
         <ChartComponent data={chartData} options={options} />
       )}
     </div>
-  )
+  );
 }

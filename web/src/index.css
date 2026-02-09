@@ -1,0 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	font-family: "Public Sans", system-ui, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+	color: #0b1f24;
+	background-color: #f5f7f8;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
+	background: radial-gradient(
+		circle at top,
+		#e8fbf7 0%,
+		#f5f7f8 45%,
+		#fef7ed 100%
+	);
+	color: #0b1f24;
+	overflow: hidden;
+}
+
+#root {
+	min-height: 100vh;
+	height: 100%;
+}
+
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@layer utilities {
+	.animate-rise {
+		animation: rise 700ms ease-out both;
+	}
+
+	.animate-rise-delayed {
+		animation: rise 700ms ease-out 120ms both;
+	}
+
+	.animate-fade {
+		animation: fade 600ms ease-out both;
+	}
+}
+
+@layer components {
+	.btn-primary {
+		@apply bg-primary-600 text-white px-4 py-2 rounded-full hover:bg-primary-700 transition-colors duration-200 font-medium shadow-sm shadow-primary-200/60;
+	}
+
+	.btn-secondary {
+		@apply bg-white/80 text-gray-800 px-4 py-2 rounded-full hover:bg-white transition-colors duration-200 font-medium border border-gray-200;
+	}
+
+	.card {
+		@apply bg-white/90 rounded-2xl shadow-[0_20px_60px_-45px_rgba(15,118,110,0.5)] p-4 border border-white/60 backdrop-blur;
+	}
+
+	.input-field {
+		@apply w-full px-4 py-2 border border-gray-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent;
+	}
+
+	.input-field-compact {
+		@apply w-full px-2 py-1 h-8 border border-gray-200 rounded-md bg-white/90 text-xs leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent;
+	}
+}

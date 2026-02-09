@@ -37,8 +37,8 @@ if command -v render &> /dev/null; then
         # Validate render.yaml first
         echo "Validating render.yaml..."
         PYTHON_BIN="python3"
-        if [ -x "./backend/.venv/bin/python" ]; then
-            PYTHON_BIN="./backend/.venv/bin/python"
+        if [ -x "./api/.venv/bin/python" ]; then
+            PYTHON_BIN="./api/.venv/bin/python"
         fi
         "$PYTHON_BIN" << 'PYEOF'
 import yaml
@@ -223,7 +223,7 @@ except json.JSONDecodeError:
 if not isinstance(data, list):
     sys.exit(3)
 
-targets = {"catalyst-api", "catalyst-frontend"}
+targets = {"catalyst-api", "catalyst-web"}
 found = []
 for svc in data:
     name = svc.get("name")
@@ -236,14 +236,14 @@ PYEOF
         )
 
         if [ -z "$SERVICE_LINES" ]; then
-            echo -e "${YELLOW}⚠️  Services not found in workspace:${NC} catalyst-api, catalyst-frontend"
+            echo -e "${YELLOW}⚠️  Services not found in workspace:${NC} catalyst-api, catalyst-web"
             echo ""
             echo "Create them from render.yaml in the Render Dashboard, then re-run."
             exit 1
         fi
 
         MISSING=0
-        for expected in catalyst-api catalyst-frontend; do
+        for expected in catalyst-api catalyst-web; do
             if ! echo "$SERVICE_LINES" | grep -q "^${expected}:"; then
                 echo -e "${YELLOW}⚠️  Missing service:${NC} $expected"
                 MISSING=1

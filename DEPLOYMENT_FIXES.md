@@ -10,7 +10,7 @@ This document explains what issues were found and how they were fixed.
 
 ### 1. PORT Environment Variable (FIXED ✅)
 
-**Issue:** The backend service had a manually configured PORT environment variable:
+**Issue:** The api service had a manually configured PORT environment variable:
 ```yaml
 envVars:
   - key: PORT
@@ -19,9 +19,9 @@ envVars:
 
 **Problem:** Render automatically provides the `PORT` environment variable. Setting it manually can cause conflicts.
 
-**Fix:** Removed the PORT environment variable. The backend now correctly uses Render's `$PORT` variable:
+**Fix:** Removed the PORT environment variable. The api now correctly uses Render's `$PORT` variable:
 ```yaml
-startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+startCommand: "cd api && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 ```
 
 ### 2. Environment Variable Type (FIXED ✅)
@@ -55,8 +55,8 @@ startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 A comprehensive validation script that checks:
 - YAML syntax
 - Directory structure  
-- Backend configuration
-- Frontend configuration
+- API configuration
+- Web configuration
 - Health endpoint existence
 - Build commands
 - Render Blueprint specification compliance
@@ -79,15 +79,15 @@ Complete deployment readiness report including:
 
 ## Current Configuration
 
-### Backend Service (catalyst-api)
+### API Service (catalyst-api)
 
 ```yaml
 - type: web
   name: catalyst-api
   env: python
   region: oregon
-  buildCommand: "cd backend && pip install -r requirements.txt"
-  startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+  buildCommand: "cd api && pip install -r requirements.txt"
+  startCommand: "cd api && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
   envVars:
     - key: PYTHON_VERSION
       value: "3.11.0"
@@ -100,14 +100,14 @@ Complete deployment readiness report including:
 - ✅ Health check configured
 - ✅ Region specified (allowed for web services)
 
-### Frontend Service (catalyst-frontend)
+### Web Service (catalyst-web)
 
 ```yaml
 - type: web
-  name: catalyst-frontend
+  name: catalyst-web
   env: static
-  buildCommand: "cd frontend && npm install && npm run build"
-  staticPublishPath: ./frontend/dist
+  buildCommand: "cd web && npm install && npm run build"
+  staticPublishPath: ./web/dist
   pullRequestPreviewsEnabled: true
   headers:
     - path: /*
@@ -133,7 +133,7 @@ Complete deployment readiness report including:
 - ✅ Static publish path specified
 - ✅ Security headers configured
 - ✅ SPA routing configured
-- ✅ Dynamic API URL from backend service
+- ✅ Dynamic API URL from api service
 
 ---
 
@@ -158,7 +158,7 @@ All validation checks pass. The render.yaml file is now fully compliant with Ren
    - Branch: `copilot/add-catalyst-data-visualization`
 
 4. **Apply Configuration**
-   - Review the 2 services (backend + frontend)
+   - Review the 2 services (api + web)
    - Click "Apply"
 
 5. **Monitor Deployment**
@@ -171,14 +171,14 @@ All validation checks pass. The render.yaml file is now fully compliant with Ren
 
 After successful deployment:
 
-**Backend:**
+**API:**
 - URL: https://catalyst-api.onrender.com
 - Health: https://catalyst-api.onrender.com/health
 - Docs: https://catalyst-api.onrender.com/docs
 
-**Frontend:**
-- URL: https://catalyst-frontend.onrender.com
-- Automatically configured with backend URL
+**Web:**
+- URL: https://catalyst-web.onrender.com
+- Automatically configured with api URL
 
 ---
 
@@ -187,7 +187,7 @@ After successful deployment:
 After deployment, verify with:
 
 ```bash
-# Backend health check
+# API health check
 curl https://catalyst-api.onrender.com/health
 # Expected: {"status": "healthy", "service": "catalyst-api"}
 
@@ -195,8 +195,8 @@ curl https://catalyst-api.onrender.com/health
 curl https://catalyst-api.onrender.com/datasets
 # Expected: JSON with 15 datasets
 
-# Frontend
-curl -I https://catalyst-frontend.onrender.com
+# Web
+curl -I https://catalyst-web.onrender.com
 # Expected: HTTP 200 OK
 ```
 
