@@ -33,62 +33,118 @@ export default function Chart({ data, chartConfig }) {
 	const chartData = useMemo(() => {
 		if (!data || data.length === 0) return null;
 
-		const { chart_type, x_axis, y_axis, category, value } = chartConfig;
+		const { chart_type, x_axis, y_axis, category, value, color_by } =
+			chartConfig;
+		const xAxisKeys = Array.isArray(x_axis)
+			? x_axis.filter(Boolean)
+			: x_axis
+				? [x_axis]
+				: [];
+		const yAxisKeys = Array.isArray(y_axis)
+			? y_axis.filter(Boolean)
+			: y_axis
+				? [y_axis]
+				: [];
+		const colorKeys = Array.isArray(color_by)
+			? color_by.filter(Boolean)
+			: color_by
+				? [color_by]
+				: [];
+		const colorKey = colorKeys[0] || null;
+		const palette = [
+			"#14b8a6",
+			"#06b6d4",
+			"#3b82f6",
+			"#6366f1",
+			"#8b5cf6",
+			"#ec4899",
+			"#f97316",
+			"#eab308",
+			"#22c55e",
+		];
+
+		const buildLabels = (rows, key) => {
+			const seen = new Set();
+			const labels = [];
+			rows.forEach((row) => {
+				const label = row[key];
+				if (label === undefined || label === null || seen.has(label)) {
+					return;
+				}
+				seen.add(label);
+				labels.push(label);
+			});
+			return labels.slice(0, 50);
+		};
+
+		const aggregateSeries = (rows, xKey, yKey, groupKey) => {
+			const labels = buildLabels(rows, xKey);
+			const grouped = new Map();
+			rows.forEach((row) => {
+				const label = row[xKey];
+				if (label === undefined || label === null) return;
+				const group = groupKey ? (row[groupKey] ?? "Other") : "All";
+				const numericValue = Number(row[yKey]);
+				const valueToAdd = Number.isFinite(numericValue) ? numericValue : 1;
+				if (!grouped.has(group)) {
+					grouped.set(group, new Map());
+				}
+				const groupMap = grouped.get(group);
+				groupMap.set(label, (groupMap.get(label) || 0) + valueToAdd);
+			});
+
+			const datasets = Array.from(grouped.entries()).map(
+				([group, map], index) => ({
+					label: groupKey ? `${yKey} · ${group}` : yKey,
+					data: labels.map((label) => map.get(label) ?? 0),
+					borderColor: palette[index % palette.length],
+					backgroundColor:
+						chart_type === "bar"
+							? `${palette[index % palette.length]}cc`
+							: `${palette[index % palette.length]}22`,
+					borderWidth: 2,
+					fill: chart_type === "line",
+					tension: 0.35,
+				}),
+			);
+
+			return { labels, datasets };
+		};
 
 		// Prepare data based on chart type
 		if (chart_type === "line" || chart_type === "bar") {
-			// For line and bar charts
-			const primaryValues = data.map((row) => Number(row[y_axis]));
-			const numericCount = primaryValues.filter((value) =>
-				Number.isFinite(value),
-			).length;
-			const shouldSwap = numericCount < Math.max(1, data.length * 0.5);
+			const xKey = xAxisKeys[0];
+			if (!xKey || yAxisKeys.length === 0) return null;
+			const primaryY = yAxisKeys[0];
 
-			const labelKey = shouldSwap ? y_axis : x_axis;
-			const valueKey = shouldSwap ? x_axis : y_axis;
-			const labelText = shouldSwap ? x_axis : y_axis;
+			if (colorKey) {
+				return aggregateSeries(data, xKey, primaryY, colorKey);
+			}
 
-			const labels = data.map((row) => row[labelKey]).slice(0, 50);
-			const values = data
-				.map((row, index) => {
-					const rawValue = row[valueKey];
-					const numericValue = Number(rawValue);
-					return Number.isFinite(numericValue) ? numericValue : index;
-				})
-				.slice(0, 50);
+			const labels = buildLabels(data, xKey);
+			const datasets = yAxisKeys.map((yKey, index) => {
+				const series = aggregateSeries(data, xKey, yKey, null);
+				return {
+					label: yKey,
+					data: series.labels.map((_label, labelIndex) => {
+						const value = series.datasets[0]?.data?.[labelIndex];
+						return Number.isFinite(value) ? value : 0;
+					}),
+					borderColor: palette[index % palette.length],
+					backgroundColor:
+						chart_type === "bar"
+							? `${palette[index % palette.length]}cc`
+							: `${palette[index % palette.length]}22`,
+					borderWidth: 2,
+					fill: chart_type === "line",
+					tension: 0.35,
+				};
+			});
 
-			return {
-				labels,
-				datasets: [
-					{
-						label: labelText,
-						data: values,
-						borderColor: "rgb(14, 165, 233)",
-						backgroundColor:
-							chart_type === "bar"
-								? "rgba(14, 165, 233, 0.8)"
-								: "rgba(14, 165, 233, 0.1)",
-						borderWidth: 2,
-						fill: chart_type === "line",
-						tension: 0.4,
-					},
-				],
-			};
+			return { labels, datasets };
 		}
 
 		if (chart_type === "treemap") {
-			const palette = [
-				"#14b8a6",
-				"#06b6d4",
-				"#3b82f6",
-				"#6366f1",
-				"#8b5cf6",
-				"#ec4899",
-				"#f97316",
-				"#eab308",
-				"#22c55e",
-			];
-
 			return {
 				datasets: [
 					{
@@ -135,22 +191,47 @@ export default function Chart({ data, chartConfig }) {
 		}
 
 		if (chart_type === "scatter") {
-			// For scatter plots
-			const points = data.slice(0, 200).map((row) => ({
-				x: parseFloat(row[x_axis]) || 0,
-				y: parseFloat(row[y_axis]) || 0,
-			}));
+			const xKey = xAxisKeys[0];
+			if (!xKey || yAxisKeys.length === 0) return null;
+
+			if (colorKey) {
+				const yKey = yAxisKeys[0];
+				const grouped = new Map();
+				data.slice(0, 400).forEach((row) => {
+					const group = row[colorKey] ?? "Other";
+					const xVal = Number(row[xKey]);
+					const yVal = Number(row[yKey]);
+					if (!Number.isFinite(xVal) || !Number.isFinite(yVal)) return;
+					if (!grouped.has(group)) {
+						grouped.set(group, []);
+					}
+					grouped.get(group).push({ x: xVal, y: yVal });
+				});
+
+				return {
+					datasets: Array.from(grouped.entries()).map(
+						([group, points], index) => ({
+							label: `${yKey} · ${group}`,
+							data: points,
+							backgroundColor: `${palette[index % palette.length]}66`,
+							borderColor: palette[index % palette.length],
+							borderWidth: 1,
+						}),
+					),
+				};
+			}
 
 			return {
-				datasets: [
-					{
-						label: `${x_axis} vs ${y_axis}`,
-						data: points,
-						backgroundColor: "rgba(14, 165, 233, 0.6)",
-						borderColor: "rgb(14, 165, 233)",
-						borderWidth: 1,
-					},
-				],
+				datasets: yAxisKeys.map((yKey, index) => ({
+					label: `${xKey} vs ${yKey}`,
+					data: data.slice(0, 200).map((row) => ({
+						x: Number(row[xKey]) || 0,
+						y: Number(row[yKey]) || 0,
+					})),
+					backgroundColor: `${palette[index % palette.length]}66`,
+					borderColor: palette[index % palette.length],
+					borderWidth: 1,
+				})),
 			};
 		}
 
@@ -158,6 +239,16 @@ export default function Chart({ data, chartConfig }) {
 	}, [data, chartConfig]);
 
 	const isCompact = typeof window !== "undefined" && window.innerWidth < 768;
+
+	// Check if we have color grouping enabled
+	const colorByArray = Array.isArray(chartConfig.color_by)
+		? chartConfig.color_by.filter(Boolean)
+		: chartConfig.color_by
+			? [chartConfig.color_by]
+			: [];
+	const hasColorBy = colorByArray.length > 0;
+	const isStacked = chartConfig.chart_type === "bar" && hasColorBy;
+
 	const options = {
 		responsive: true,
 		maintainAspectRatio: false,
@@ -179,6 +270,7 @@ export default function Chart({ data, chartConfig }) {
 			? undefined
 			: {
 					x: {
+						stacked: isStacked,
 						grid: {
 							display: false,
 						},
@@ -190,6 +282,7 @@ export default function Chart({ data, chartConfig }) {
 						},
 					},
 					y: {
+						stacked: isStacked,
 						grid: {
 							color: "rgba(0, 0, 0, 0.05)",
 						},
@@ -210,7 +303,7 @@ export default function Chart({ data, chartConfig }) {
 
 	if (!chartData) {
 		return (
-			<div className="text-center py-8 text-gray-600">
+			<div className="text-left py-8 text-gray-600">
 				No data available for visualization
 			</div>
 		);

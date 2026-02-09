@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiArrowLeft, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiChevronDown, FiRefreshCw } from "react-icons/fi";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
 	analyzeDataset,
@@ -22,12 +22,14 @@ export default function DatasetViewer() {
 	const [error, setError] = useState(null);
 	const [filters, setFilters] = useState({});
 	const [chartType, setChartType] = useState("bar");
-	const [xAxis, setXAxis] = useState("");
-	const [yAxis, setYAxis] = useState("");
+	const [xAxis, setXAxis] = useState([]);
+	const [yAxis, setYAxis] = useState([]);
+	const [colorBy, setColorBy] = useState([]);
 	const [categoryAxis, setCategoryAxis] = useState("");
 	const [valueAxis, setValueAxis] = useState("");
 	const [locationAxis, setLocationAxis] = useState("");
-	const [columnSort, setColumnSort] = useState("default");
+	const [openAxisPicker, setOpenAxisPicker] = useState(null);
+	const [showPreview, setShowPreview] = useState(false);
 	const { setHeader } = useHeader();
 
 	const loadDataset = useCallback(async () => {
@@ -47,11 +49,12 @@ export default function DatasetViewer() {
 			if (analysisData?.recommended_chart) {
 				const recommended = analysisData.recommended_chart;
 				setChartType(recommended.chart_type || "bar");
-				setXAxis(recommended.x_axis || "");
-				setYAxis(recommended.y_axis || "");
+				setXAxis(recommended.x_axis ? [recommended.x_axis] : []);
+				setYAxis(recommended.y_axis ? [recommended.y_axis] : []);
 				setCategoryAxis(recommended.category || "");
 				setValueAxis(recommended.value || "");
 				setLocationAxis(recommended.location || "");
+				setColorBy([]);
 			}
 		} catch (err) {
 			setError(err.message);
@@ -136,36 +139,33 @@ export default function DatasetViewer() {
 
 	const columnData = useMemo(() => {
 		const columns = analysis?.columns || [];
-		const sorter = (values) => {
-			if (columnSort === "asc") {
-				return [...values].sort((a, b) => a.localeCompare(b));
-			}
-			if (columnSort === "desc") {
-				return [...values].sort((a, b) => b.localeCompare(a));
-			}
-			return values;
-		};
+		const sortValues = (values) =>
+			[...values].sort((a, b) => a.localeCompare(b));
+
+		const temporalCols = columns.filter((col) => col.type === "temporal");
+		const numericalCols = columns.filter((col) => col.type === "numerical");
+		const categoricalCols = columns.filter((col) => col.type === "categorical");
+
+		// Sort categorical by unique_count to find low-cardinality columns
+		const categoricalByCardinality = [...categoricalCols].sort(
+			(a, b) => (a.unique_count || 0) - (b.unique_count || 0),
+		);
 
 		return {
-			allColumns: sorter(columns.map((col) => col.name)),
-			numericColumns: sorter(
-				columns
-					.filter((col) => col.type === "numerical")
-					.map((col) => col.name),
-			),
-			categoricalColumns: sorter(
-				columns
-					.filter((col) => col.type === "categorical")
-					.map((col) => col.name),
-			),
-			temporalColumns: sorter(
-				columns.filter((col) => col.type === "temporal").map((col) => col.name),
-			),
-			geographicColumns: sorter(
+			allColumns: sortValues(columns.map((col) => col.name)),
+			numericColumns: sortValues(numericalCols.map((col) => col.name)),
+			categoricalColumns: sortValues(categoricalCols.map((col) => col.name)),
+			temporalColumns: sortValues(temporalCols.map((col) => col.name)),
+			geographicColumns: sortValues(
 				columns.filter((col) => col.is_geographic).map((col) => col.name),
 			),
+			// For auto-selection: use original column objects for smart inference
+			_temporalCols: temporalCols,
+			_numericalCols: numericalCols,
+			_categoricalCols: categoricalCols,
+			_categoricalByCardinality: categoricalByCardinality,
 		};
-	}, [analysis, columnSort]);
+	}, [analysis]);
 
 	const {
 		allColumns,
@@ -173,15 +173,36 @@ export default function DatasetViewer() {
 		categoricalColumns,
 		temporalColumns,
 		geographicColumns,
+		_temporalCols,
+		_numericalCols,
+		_categoricalCols,
+		_categoricalByCardinality,
 	} = columnData;
 
+	// Infer schema and auto-select axes based on data types
 	useEffect(() => {
 		if (!analysis?.columns || analysis.columns.length === 0) {
 			return;
 		}
 
-		setXAxis((prev) => prev || temporalColumns[0] || allColumns[0] || "");
-		setYAxis((prev) => prev || numericColumns[0] || allColumns[0] || "");
+		// X-axis: First temporal column, fallback to first categorical (nominal)
+		const autoX =
+			_temporalCols[0]?.name || _categoricalCols[0]?.name || allColumns[0];
+		setXAxis((prev) => (prev.length ? prev : autoX ? [autoX] : []));
+
+		// Y-axis: First quantitative (numerical) column
+		const autoY = _numericalCols[0]?.name || allColumns[0];
+		setYAxis((prev) => (prev.length ? prev : autoY ? [autoY] : []));
+
+		// Color: Second categorical column, or one with fewest unique values
+		// Prefer low-cardinality columns for better color encoding
+		const autoColor =
+			_categoricalByCardinality[0]?.name &&
+				_categoricalByCardinality[0].unique_count <= 10
+				? _categoricalByCardinality[0].name
+				: _categoricalCols[1]?.name || _categoricalCols[0]?.name;
+		setColorBy((prev) => (prev.length ? prev : autoColor ? [autoColor] : []));
+
 		setCategoryAxis(
 			(prev) => prev || categoricalColumns[0] || allColumns[0] || "",
 		);
@@ -200,7 +221,10 @@ export default function DatasetViewer() {
 		categoricalColumns,
 		geographicColumns,
 		numericColumns,
-		temporalColumns,
+		_temporalCols,
+		_numericalCols,
+		_categoricalCols,
+		_categoricalByCardinality,
 	]);
 
 	useEffect(() => {
@@ -212,12 +236,8 @@ export default function DatasetViewer() {
 			const preferredX =
 				temporalColumns[0] || categoricalColumns[0] || allColumns[0] || "";
 			const preferredY = numericColumns[0] || allColumns[0] || "";
-			if (preferredX) {
-				setXAxis(preferredX);
-			}
-			if (preferredY) {
-				setYAxis(preferredY);
-			}
+			setXAxis((prev) => (prev.length ? prev : preferredX ? [preferredX] : []));
+			setYAxis((prev) => (prev.length ? prev : preferredY ? [preferredY] : []));
 			return;
 		}
 
@@ -225,12 +245,8 @@ export default function DatasetViewer() {
 			const scatterX = numericColumns[0] || allColumns[0] || "";
 			const scatterY =
 				numericColumns[1] || numericColumns[0] || allColumns[0] || "";
-			if (scatterX) {
-				setXAxis(scatterX);
-			}
-			if (scatterY) {
-				setYAxis(scatterY);
-			}
+			setXAxis((prev) => (prev.length ? prev : scatterX ? [scatterX] : []));
+			setYAxis((prev) => (prev.length ? prev : scatterY ? [scatterY] : []));
 		}
 	}, [
 		allColumns,
@@ -264,20 +280,110 @@ export default function DatasetViewer() {
 			};
 		}
 
-		if (!xAxis || !yAxis) return null;
+		if (!xAxis.length || !yAxis.length) return null;
 		return {
 			chart_type: chartType,
-			title: `${yAxis} by ${xAxis}`,
+			title: `${yAxis.join(", ")} by ${xAxis.join(", ")}`,
 			x_axis: xAxis,
 			y_axis: yAxis,
+			color_by: colorBy,
 		};
-	}, [categoryAxis, chartType, locationAxis, valueAxis, xAxis, yAxis]);
+	}, [categoryAxis, chartType, colorBy, locationAxis, valueAxis, xAxis, yAxis]);
+
+	const formatAxisList = useCallback((values) => {
+		if (!values || values.length === 0) return "Select";
+		if (values.length === 1) return values[0];
+		if (values.length === 2) return `${values[0]}, ${values[1]}`;
+		return `${values[0]} +${values.length - 1}`;
+	}, []);
+
+	const toggleAxisOption = (values, option) => {
+		if (values.includes(option)) {
+			return values.filter((value) => value !== option);
+		}
+		return [...values, option];
+	};
+
+	const renderMultiSelect = ({
+		id,
+		label,
+		values,
+		options,
+		onChange,
+		testId,
+	}) => {
+		const isOpen = openAxisPicker === id;
+
+		return (
+			<div className="relative min-w-[160px]">
+				<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+					{label}
+				</span>
+				<button
+					type="button"
+					data-testid={testId}
+					onClick={() => setOpenAxisPicker((prev) => (prev === id ? null : id))}
+					className="input-field-compact flex items-center justify-between gap-2"
+				>
+					<span className="truncate text-left text-gray-700">
+						{formatAxisList(values)}
+					</span>
+					<FiChevronDown className="h-3.5 w-3.5 text-gray-400" />
+				</button>
+				{isOpen && (
+					<div
+						data-testid={`${id}-popover`}
+						className="absolute left-0 right-0 mt-2 z-40 rounded-xl border border-gray-200 bg-white p-3 shadow-lg"
+					>
+						<div className="max-h-52 overflow-auto space-y-2">
+							{options.map((option) => (
+								<label
+									key={option}
+									className="flex items-center gap-2 text-xs text-gray-700"
+								>
+									<input
+										type="checkbox"
+										checked={values.includes(option)}
+										onChange={() => onChange(toggleAxisOption(values, option))}
+										className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-400"
+									/>
+									<span className="truncate">{option}</span>
+								</label>
+							))}
+						</div>
+						<div className="flex items-center justify-between mt-3 text-xs">
+							<button
+								type="button"
+								onClick={() => onChange([])}
+								className="text-gray-500 hover:text-gray-700"
+							>
+								Clear
+							</button>
+							<button
+								type="button"
+								onClick={() => setOpenAxisPicker(null)}
+								className="btn-primary text-xs px-3 py-1"
+							>
+								Done
+							</button>
+						</div>
+					</div>
+				)}
+			</div>
+		);
+	};
 
 	const headerContent = useMemo(() => {
 		if (!dataset) return null;
 
+		const chartTitle = selectedChart
+			? ["treemap", "map"].includes(selectedChart.chart_type)
+				? selectedChart.title
+				: `${formatAxisList(yAxis)} by ${formatAxisList(xAxis)}`
+			: "Chart";
+
 		return (
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-col gap-1 min-w-0">
 				<div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap">
 					<Link
 						to="/datasets"
@@ -292,200 +398,9 @@ export default function DatasetViewer() {
 					>
 						{dataset.name}
 					</span>
-					<span className="text-xs text-gray-500">{dataset.description}</span>
+					<span className="text-xs text-gray-500">{chartTitle}</span>
 					<span className="text-xs text-gray-500">{dataset.provider}</span>
 					<span className="text-xs text-gray-500">{dataset.category}</span>
-					<button
-						type="button"
-						onClick={loadDataset}
-						className="text-xs px-2 py-1 border border-gray-200 rounded-full hover:bg-white"
-					>
-						<FiRefreshCw className="inline mr-1" />
-						Refresh
-					</button>
-					<div className="h-4 w-px bg-gray-200" />
-					<div className="flex items-center gap-1 min-w-[150px]">
-						<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-							Dataset
-						</span>
-						<select
-							data-testid="dataset-select"
-							value={datasetId}
-							onChange={(e) => handleDatasetChange(e.target.value)}
-							className="input-field-compact"
-						>
-							{datasets.length === 0 && dataset?.name && (
-								<option value={datasetId}>{dataset.name}</option>
-							)}
-							{datasets.map((item) => (
-								<option key={item.id} value={item.id}>
-									{item.name}
-								</option>
-							))}
-						</select>
-					</div>
-					<div className="flex items-center gap-1 min-w-[120px]">
-						<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-							Chart
-						</span>
-						<select
-							data-testid="chart-type-select"
-							value={chartType}
-							onChange={(e) => handleChartTypeChange(e.target.value)}
-							className="input-field-compact"
-							disabled={allColumns.length === 0}
-						>
-							<option value="line">Line</option>
-							<option value="bar">Bar</option>
-							<option value="scatter">Scatter</option>
-							<option value="treemap">Treemap</option>
-							<option value="map">Map</option>
-						</select>
-					</div>
-					<div className="flex items-center gap-1 min-w-[120px]">
-						<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-							Sort
-						</span>
-						<select
-							value={columnSort}
-							onChange={(e) => setColumnSort(e.target.value)}
-							className="input-field-compact"
-						>
-							<option value="default">Default</option>
-							<option value="asc">A-Z</option>
-							<option value="desc">Z-A</option>
-						</select>
-					</div>
-					{["line", "bar", "scatter"].includes(chartType) && (
-						<div className="flex items-center gap-1 min-w-[140px]">
-							<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-								X
-							</span>
-							<select
-								data-testid="x-axis-select"
-								value={xAxis}
-								onChange={(e) => setXAxis(e.target.value)}
-								className="input-field-compact"
-							>
-								{allColumns.map((col) => (
-									<option key={col} value={col}>
-										{col}
-									</option>
-								))}
-							</select>
-						</div>
-					)}
-					{["line", "bar", "scatter"].includes(chartType) && (
-						<div className="flex items-center gap-1 min-w-[140px]">
-							<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-								Y
-							</span>
-							<select
-								data-testid="y-axis-select"
-								value={yAxis}
-								onChange={(e) => setYAxis(e.target.value)}
-								className="input-field-compact"
-							>
-								{numericColumns.length === 0 &&
-									allColumns.map((col) => (
-										<option key={col} value={col}>
-											{col}
-										</option>
-									))}
-								{numericColumns.map((col) => (
-									<option key={col} value={col}>
-										{col}
-									</option>
-								))}
-							</select>
-						</div>
-					)}
-					{chartType === "treemap" && (
-						<>
-							<div className="flex items-center gap-1 min-w-[150px]">
-								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-									Category
-								</span>
-								<select
-									data-testid="category-select"
-									value={categoryAxis}
-									onChange={(e) => setCategoryAxis(e.target.value)}
-									className="input-field-compact"
-								>
-									{(categoricalColumns.length
-										? categoricalColumns
-										: allColumns
-									).map((col) => (
-										<option key={col} value={col}>
-											{col}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className="flex items-center gap-1 min-w-[130px]">
-								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-									Value
-								</span>
-								<select
-									data-testid="value-select"
-									value={valueAxis}
-									onChange={(e) => setValueAxis(e.target.value)}
-									className="input-field-compact"
-								>
-									{(numericColumns.length ? numericColumns : allColumns).map(
-										(col) => (
-											<option key={col} value={col}>
-												{col}
-											</option>
-										),
-									)}
-								</select>
-							</div>
-						</>
-					)}
-					{chartType === "map" && (
-						<>
-							<div className="flex items-center gap-1 min-w-[150px]">
-								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-									Location
-								</span>
-								<select
-									data-testid="location-select"
-									value={locationAxis}
-									onChange={(e) => setLocationAxis(e.target.value)}
-									className="input-field-compact"
-								>
-									{(geographicColumns.length
-										? geographicColumns
-										: allColumns
-									).map((col) => (
-										<option key={col} value={col}>
-											{col}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className="flex items-center gap-1 min-w-[130px]">
-								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-									Value
-								</span>
-								<select
-									data-testid="map-value-select"
-									value={valueAxis}
-									onChange={(e) => setValueAxis(e.target.value)}
-									className="input-field-compact"
-								>
-									{(numericColumns.length ? numericColumns : allColumns).map(
-										(col) => (
-											<option key={col} value={col}>
-												{col}
-											</option>
-										),
-									)}
-								</select>
-							</div>
-						</>
-					)}
 				</div>
 				{analysis?.statistics && (
 					<div className="flex items-center gap-3 text-[11px] text-gray-500">
@@ -503,26 +418,7 @@ export default function DatasetViewer() {
 				)}
 			</div>
 		);
-	}, [
-		allColumns,
-		analysis,
-		categoryAxis,
-		categoricalColumns,
-		chartType,
-		columnSort,
-		dataset,
-		datasetId,
-		datasets,
-		geographicColumns,
-		handleDatasetChange,
-		handleChartTypeChange,
-		loadDataset,
-		locationAxis,
-		numericColumns,
-		valueAxis,
-		xAxis,
-		yAxis,
-	]);
+	}, [analysis, dataset, selectedChart, xAxis, yAxis, formatAxisList]);
 
 	useEffect(() => {
 		setHeader(headerContent);
@@ -531,9 +427,9 @@ export default function DatasetViewer() {
 
 	if (loading) {
 		return (
-			<div className="text-center py-12">
-				<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-				<p className="mt-4 text-gray-600">Loading dataset...</p>
+			<div className="flex items-start gap-3 py-12">
+				<div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+				<p className="text-gray-600">Loading dataset...</p>
 			</div>
 		);
 	}
@@ -564,10 +460,10 @@ export default function DatasetViewer() {
 	}
 
 	return (
-		<div className="flex flex-col gap-2 h-full overflow-hidden">
+		<div className="flex flex-col gap-2 h-full min-h-0 overflow-hidden">
 			<section className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)] gap-2 flex-1 min-h-0 overflow-hidden">
 				{/* Filters Sidebar */}
-				<div className="lg:sticky lg:top-24 h-fit">
+				<div className="lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] min-h-0">
 					<DataFilters
 						filters={analysis?.filters || []}
 						currentFilters={filters}
@@ -576,74 +472,240 @@ export default function DatasetViewer() {
 				</div>
 
 				{/* Chart Area */}
-				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto">
-					{/* Chart Display */}
-					{data && selectedChart && (
-						<div
-							data-testid="chart-section"
-							className="border-b border-gray-200 pb-2 flex-1 min-h-0 overflow-hidden"
-						>
-							<div className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
-								{selectedChart.title}
+				<div className="flex flex-col gap-1 min-h-0 overflow-hidden">
+					<div className="rounded-2xl border border-gray-200 bg-white/80 p-2">
+						<div className="flex flex-wrap items-end gap-3">
+							<div className="flex items-center gap-1 min-w-[150px]">
+								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+									Dataset
+								</span>
+								<select
+									data-testid="dataset-select"
+									value={datasetId}
+									onChange={(e) => handleDatasetChange(e.target.value)}
+									className="input-field-compact"
+								>
+									{datasets.length === 0 && dataset?.name && (
+										<option value={datasetId}>{dataset.name}</option>
+									)}
+									{datasets.map((item) => (
+										<option key={item.id} value={item.id}>
+											{item.name}
+										</option>
+									))}
+								</select>
 							</div>
-							<div className="h-[260px] md:h-[320px] xl:h-[380px]">
+							<div className="flex items-center gap-1 min-w-[120px]">
+								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+									Chart
+								</span>
+								<select
+									data-testid="chart-type-select"
+									value={chartType}
+									onChange={(e) => handleChartTypeChange(e.target.value)}
+									className="input-field-compact"
+									disabled={allColumns.length === 0}
+								>
+									<option value="line">Line</option>
+									<option value="bar">Bar</option>
+									<option value="scatter">Scatter</option>
+									<option value="treemap">Treemap</option>
+									<option value="map">Map</option>
+								</select>
+							</div>
+							{["line", "bar", "scatter"].includes(chartType) && (
+								<>
+									{renderMultiSelect({
+										id: "x-axis",
+										label: "X",
+										values: xAxis,
+										options: allColumns,
+										onChange: setXAxis,
+										testId: "x-axis-select",
+									})}
+									{renderMultiSelect({
+										id: "y-axis",
+										label: "Y",
+										values: yAxis,
+										options: allColumns,
+										onChange: setYAxis,
+										testId: "y-axis-select",
+									})}
+									{renderMultiSelect({
+										id: "color-by",
+										label: "Colour",
+										values: colorBy,
+										options: allColumns,
+										onChange: setColorBy,
+										testId: "color-by-select",
+									})}
+								</>
+							)}
+							{chartType === "treemap" && (
+								<>
+									<div className="flex items-center gap-1 min-w-[150px]">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Category
+										</span>
+										<select
+											data-testid="category-select"
+											value={categoryAxis}
+											onChange={(e) => setCategoryAxis(e.target.value)}
+											className="input-field-compact"
+										>
+											{(categoricalColumns.length
+												? categoricalColumns
+												: allColumns
+											).map((col) => (
+												<option key={col} value={col}>
+													{col}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="flex items-center gap-1 min-w-[130px]">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Value
+										</span>
+										<select
+											data-testid="value-select"
+											value={valueAxis}
+											onChange={(e) => setValueAxis(e.target.value)}
+											className="input-field-compact"
+										>
+											{(numericColumns.length
+												? numericColumns
+												: allColumns
+											).map((col) => (
+												<option key={col} value={col}>
+													{col}
+												</option>
+											))}
+										</select>
+									</div>
+								</>
+							)}
+							{chartType === "map" && (
+								<>
+									<div className="flex items-center gap-1 min-w-[150px]">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Location
+										</span>
+										<select
+											data-testid="location-select"
+											value={locationAxis}
+											onChange={(e) => setLocationAxis(e.target.value)}
+											className="input-field-compact"
+										>
+											{(geographicColumns.length
+												? geographicColumns
+												: allColumns
+											).map((col) => (
+												<option key={col} value={col}>
+													{col}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="flex items-center gap-1 min-w-[130px]">
+										<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+											Value
+										</span>
+										<select
+											data-testid="map-value-select"
+											value={valueAxis}
+											onChange={(e) => setValueAxis(e.target.value)}
+											className="input-field-compact"
+										>
+											{(numericColumns.length
+												? numericColumns
+												: allColumns
+											).map((col) => (
+												<option key={col} value={col}>
+													{col}
+												</option>
+											))}
+										</select>
+									</div>
+								</>
+							)}
+							<button
+								type="button"
+								onClick={loadDataset}
+								className="ml-auto text-xs px-2 py-1 border border-gray-200 rounded-full hover:bg-white"
+							>
+								<FiRefreshCw className="inline mr-1" />
+								Refresh
+							</button>
+						</div>
+					</div>
+					<div
+						data-testid="chart-section"
+						className="flex-1 min-h-0 relative rounded-2xl border border-gray-200 bg-white/80 overflow-hidden"
+					>
+						{data && selectedChart ? (
+							<div className="h-full">
 								<Chart data={data.data} chartConfig={selectedChart} />
 							</div>
-						</div>
-					)}
-
-					{/* Data Table Preview */}
-					{data?.data?.length > 0 && (
-						<div className="border-b border-gray-200 pb-2 max-h-[260px]">
-							<div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
-								<span>Data Preview</span>
-								<span>{data.total} rows</span>
+						) : (
+							<div className="text-left text-sm text-gray-500 p-3">
+								Select a chart configuration to get started.
 							</div>
-							<div className="overflow-auto max-h-[220px]">
-								<table className="min-w-full divide-y divide-gray-200">
-									<thead className="bg-gray-50 sticky top-0">
-										<tr>
-											{Object.keys(data.data[0])
-												.slice(0, 6)
-												.map((key) => (
-													<th
-														key={key}
-														className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
-													>
-														{key}
-													</th>
-												))}
-										</tr>
-									</thead>
-									<tbody className="bg-white divide-y divide-gray-200">
-										{data.data.slice(0, 10).map((row) => {
-											const rowEntries = Object.entries(row).slice(0, 6);
-											const rowKey = row.id
-												? `row-${row.id}`
-												: rowEntries
-														.map(([key, value]) => `${key}:${String(value)}`)
-														.join("|");
+						)}
 
-											return (
-												<tr key={rowKey}>
-													{rowEntries.map(([key, value]) => (
-														<td
-															key={key}
-															className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap"
-														>
-															{typeof value === "number"
-																? value.toLocaleString()
-																: String(value)}
-														</td>
-													))}
+						{data?.data?.length > 0 && (
+							<div
+								className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${showPreview ? "max-h-80" : "h-10"
+									}`}
+							>
+								<button
+									type="button"
+									onClick={() => setShowPreview((prev) => !prev)}
+									className="w-full h-10 flex items-center justify-between px-3 text-xs uppercase tracking-[0.2em] text-gray-600"
+								>
+									<span>Data preview</span>
+									<span>{data.total?.toLocaleString()} rows</span>
+								</button>
+								{showPreview && (
+									<div className="max-h-[calc(20rem-2.5rem)] overflow-auto">
+										<table className="min-w-full divide-y divide-gray-200">
+											<thead className="bg-gray-50 sticky top-0">
+												<tr>
+													{Object.keys(data.data[0])
+														.slice(0, 6)
+														.map((key) => (
+															<th
+																key={key}
+																className="px-3 py-2 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider"
+															>
+																{key}
+															</th>
+														))}
 												</tr>
-											);
-										})}
-									</tbody>
-								</table>
+											</thead>
+											<tbody className="bg-white divide-y divide-gray-200">
+												{data.data.slice(0, 10).map((row, index) => {
+													const rowEntries = Object.entries(row).slice(0, 6);
+													return (
+														<tr key={`${rowEntries[0]?.[1]}-${index}`}>
+															{rowEntries.map(([key, value]) => (
+																<td
+																	key={key}
+																	className="px-3 py-2 whitespace-nowrap text-xs text-gray-700"
+																>
+																	{value}
+																</td>
+															))}
+														</tr>
+													);
+												})}
+											</tbody>
+										</table>
+									</div>
+								)}
 							</div>
-						</div>
-					)}
+						)}
+					</div>
 				</div>
 			</section>
 		</div>

@@ -15,7 +15,12 @@ api.interceptors.response.use(
 	(response) => response,
 	(error) => {
 		console.error("API Error:", error);
-		throw error.response?.data?.detail || error.message || "An error occurred";
+		const detail = error.response?.data?.detail;
+		const message =
+			typeof detail === "string"
+				? detail
+				: error.message || "An error occurred";
+		throw new Error(message);
 	},
 );
 

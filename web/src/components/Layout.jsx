@@ -15,50 +15,50 @@ export default function Layout({ children }) {
 			{/* Header */}
 			<header className="bg-white/90 backdrop-blur sticky top-0 z-50 border-b border-gray-200">
 				<nav className="w-full px-2 sm:px-3 lg:px-4">
-					<div className="flex justify-between items-center h-10">
-						{/* Logo */}
-						<Link to="/" className="flex items-center space-x-2">
-							<FiBarChart2 className="h-6 w-6 text-primary-600" />
-							<span className="text-lg font-bold text-gray-900 font-display tracking-tight">
-								Catalyst
-							</span>
-						</Link>
+					<div className="flex flex-col gap-2 py-2">
+						<div className="flex items-center gap-3">
+							<div className="flex items-center gap-3 shrink-0">
+								<Link to="/" className="flex items-center space-x-2">
+									<FiBarChart2 className="h-6 w-6 text-primary-600" />
+									<span className="text-lg font-bold text-gray-900 font-display tracking-tight">
+										Catalyst
+									</span>
+								</Link>
+								<Link
+									to="/"
+									className={`${
+										isActive("/") ? "text-primary-600" : "text-gray-700"
+									} hover:text-primary-600 transition-colors font-medium`}
+								>
+									Home
+								</Link>
+								<Link
+									to="/datasets"
+									className={`${
+										isActive("/datasets") ||
+										location.pathname.startsWith("/datasets/")
+											? "text-primary-600"
+											: "text-gray-700"
+									} hover:text-primary-600 transition-colors font-medium`}
+								>
+									Explore Datasets
+								</Link>
+							</div>
 
-						{/* Desktop Navigation */}
-						<div className="hidden md:flex items-center space-x-6 text-sm">
-							<Link
-								to="/"
-								className={`${
-									isActive("/") ? "text-primary-600" : "text-gray-700"
-								} hover:text-primary-600 transition-colors font-medium`}
+							{header && <div className="flex-1 min-w-0">{header}</div>}
+
+							<button
+								type="button"
+								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+								className="md:hidden p-2 rounded-lg hover:bg-gray-100 shrink-0"
 							>
-								Home
-							</Link>
-							<Link
-								to="/datasets"
-								className={`${
-									isActive("/datasets") ||
-									location.pathname.startsWith("/datasets/")
-										? "text-primary-600"
-										: "text-gray-700"
-								} hover:text-primary-600 transition-colors font-medium`}
-							>
-								Explore Datasets
-							</Link>
+								{mobileMenuOpen ? (
+									<FiX className="h-6 w-6" />
+								) : (
+									<FiMenu className="h-6 w-6" />
+								)}
+							</button>
 						</div>
-
-						{/* Mobile menu button */}
-						<button
-							type="button"
-							onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-							className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-						>
-							{mobileMenuOpen ? (
-								<FiX className="h-6 w-6" />
-							) : (
-								<FiMenu className="h-6 w-6" />
-							)}
-						</button>
 					</div>
 				</nav>
 
@@ -90,8 +90,6 @@ export default function Layout({ children }) {
 						</div>
 					</div>
 				)}
-
-				{header && <div className="py-1">{header}</div>}
 			</header>
 
 			{/* Main Content */}
