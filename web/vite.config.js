@@ -16,4 +16,13 @@ export default defineConfig({
 		outDir: "dist",
 		sourcemap: true,
 	},
+	optimizeDeps: {
+		exclude: ["@duckdb/duckdb-wasm"],
+		esbuildOptions: {
+			target: "esnext",
+		},
+	},
+	worker: {
+		format: "es",
+	},
 });

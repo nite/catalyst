@@ -100,7 +100,7 @@ async def get_dataset(dataset_id: str):
 @api_router.get("/datasets/{dataset_id}/data")
 async def get_dataset_data(
     dataset_id: str,
-    limit: int = Query(default=100, ge=1, le=1000),
+    limit: int = Query(default=100, ge=1, le=100000),
     offset: int = Query(default=0, ge=0),
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
@@ -110,7 +110,7 @@ async def get_dataset_data(
     Fetch dataset data with filtering and pagination
 
     Query Parameters:
-    - limit: Maximum rows to return (1-1000)
+    - limit: Maximum rows to return (1-100000)
     - offset: Number of rows to skip
     - date_from: Start date for time series filtering (ISO format)
     - date_to: End date for time series filtering (ISO format)

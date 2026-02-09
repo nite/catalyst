@@ -7,6 +7,8 @@ import {
 	fetchDatasetData,
 	fetchDatasets,
 } from "../utils/api";
+import { loadDataset as loadDatasetToDB, dropDataset, queryDataset } from "../utils/databaseManager";
+import { buildAggregationQuery } from "../utils/sqlBuilder";
 import Chart from "./Chart";
 import DataFilters from "./DataFilters";
 import { useHeader } from "./HeaderContext";
@@ -16,9 +18,9 @@ export default function DatasetViewer() {
 	const navigate = useNavigate();
 	const [dataset, setDataset] = useState(null);
 	const [datasets, setDatasets] = useState([]);
-	const [data, setData] = useState(null);
 	const [analysis, setAnalysis] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [loadingData, setLoadingData] = useState(false);
 	const [error, setError] = useState(null);
 	const [filters, setFilters] = useState({});
 	const [chartType, setChartType] = useState("bar");
@@ -30,6 +32,9 @@ export default function DatasetViewer() {
 	const [locationAxis, setLocationAxis] = useState("");
 	const [openAxisPicker, setOpenAxisPicker] = useState(null);
 	const [showPreview, setShowPreview] = useState(false);
+	const [chartData, setChartData] = useState(null);
+	const [aggregation, setAggregation] = useState("SUM");
+	const [rowCount, setRowCount] = useState(0);
 	const { setHeader } = useHeader();
 
 	const loadDataset = useCallback(async () => {
@@ -82,43 +87,97 @@ export default function DatasetViewer() {
 
 	const loadData = useCallback(async () => {
 		try {
-			const params = { limit: 500 };
-			const filterPayload = {};
-
-			Object.entries(filters).forEach(([key, value]) => {
-				if (value === null || value === undefined || value === "") {
-					return;
-				}
-
-				if (dataset?.date_column && key === `${dataset.date_column}_from`) {
-					params.date_from = value;
-					return;
-				}
-
-				if (dataset?.date_column && key === `${dataset.date_column}_to`) {
-					params.date_to = value;
-					return;
-				}
-
-				filterPayload[key] = value;
-			});
-
-			if (Object.keys(filterPayload).length > 0) {
-				params.filters = JSON.stringify(filterPayload);
-			}
-
+			setLoadingData(true);
+			// Fetch full dataset (100K limit) without filters
+			const params = { limit: 100000 };
 			const dataResponse = await fetchDatasetData(datasetId, params);
-			setData(dataResponse);
+			
+			// Load into DuckDB
+			if (dataResponse.data && dataResponse.data.length > 0 && analysis?.columns) {
+				await loadDatasetToDB(datasetId, dataResponse.data, analysis.columns);
+				setRowCount(dataResponse.data.length);
+				console.log(`Loaded ${dataResponse.data.length} rows into DuckDB`);
+			}
 		} catch (err) {
 			console.error("Error loading data:", err);
+			setError(err.message);
+		} finally {
+			setLoadingData(false);
 		}
-	}, [dataset, datasetId, filters]);
+	}, [datasetId, analysis]);
 
 	useEffect(() => {
-		if (dataset) {
+		if (dataset && analysis) {
 			loadData();
 		}
-	}, [dataset, loadData]);
+	}, [dataset, analysis, loadData]);
+
+	// Cleanup: drop table when component unmounts or dataset changes
+	useEffect(() => {
+		return () => {
+			if (datasetId) {
+				dropDataset(datasetId).catch(console.error);
+			}
+		};
+	}, [datasetId]);
+
+	// Define selectedChart before using it in fetchChartData
+	const selectedChart = useMemo(() => {
+		if (!chartType) return null;
+
+		if (chartType === "treemap") {
+			if (!categoryAxis || !valueAxis) return null;
+			return {
+				chart_type: "treemap",
+				title: `${valueAxis} by ${categoryAxis}`,
+				category: categoryAxis,
+				value: valueAxis,
+			};
+		}
+
+		if (chartType === "map") {
+			if (!locationAxis || !valueAxis) return null;
+			return {
+				chart_type: "map",
+				title: `${valueAxis} by ${locationAxis}`,
+				location: locationAxis,
+				value: valueAxis,
+			};
+		}
+
+		if (!xAxis.length || !yAxis.length) return null;
+		return {
+			chart_type: chartType,
+			title: `${yAxis.join(", ")} by ${xAxis.join(", ")}`,
+			x_axis: xAxis,
+			y_axis: yAxis,
+			color_by: colorBy,
+		};
+	}, [categoryAxis, chartType, colorBy, locationAxis, valueAxis, xAxis, yAxis]);
+
+	// Fetch chart data from DuckDB when filters or chart config changes
+	const fetchChartData = useCallback(async () => {
+		if (!selectedChart || rowCount === 0) {
+			setChartData(null);
+			return;
+		}
+
+		try {
+			const chartConfig = { ...selectedChart, aggregation };
+			const filterConfigs = analysis?.filters || [];
+			const sql = buildAggregationQuery(chartConfig, filters, filterConfigs);
+			const results = await queryDataset(datasetId, sql);
+			setChartData(results);
+		} catch (err) {
+			console.error("Error fetching chart data:", err);
+		}
+	}, [selectedChart, filters, analysis, datasetId, aggregation, rowCount]);
+
+	useEffect(() => {
+		if (rowCount > 0) {
+			fetchChartData();
+		}
+	}, [fetchChartData, rowCount]);
 
 	const handleFilterChange = useCallback((newFilters) => {
 		setFilters(newFilters);
@@ -256,39 +315,6 @@ export default function DatasetViewer() {
 		numericColumns,
 		temporalColumns,
 	]);
-
-	const selectedChart = useMemo(() => {
-		if (!chartType) return null;
-
-		if (chartType === "treemap") {
-			if (!categoryAxis || !valueAxis) return null;
-			return {
-				chart_type: "treemap",
-				title: `${valueAxis} by ${categoryAxis}`,
-				category: categoryAxis,
-				value: valueAxis,
-			};
-		}
-
-		if (chartType === "map") {
-			if (!locationAxis || !valueAxis) return null;
-			return {
-				chart_type: "map",
-				title: `${valueAxis} by ${locationAxis}`,
-				location: locationAxis,
-				value: valueAxis,
-			};
-		}
-
-		if (!xAxis.length || !yAxis.length) return null;
-		return {
-			chart_type: chartType,
-			title: `${yAxis.join(", ")} by ${xAxis.join(", ")}`,
-			x_axis: xAxis,
-			y_axis: yAxis,
-			color_by: colorBy,
-		};
-	}, [categoryAxis, chartType, colorBy, locationAxis, valueAxis, xAxis, yAxis]);
 
 	const formatAxisList = useCallback((values) => {
 		if (!values || values.length === 0) return "Select";
@@ -513,8 +539,30 @@ export default function DatasetViewer() {
 									<option value="map">Map</option>
 								</select>
 							</div>
-							{["line", "bar", "scatter"].includes(chartType) && (
-								<>
+							{["line", "bar", "scatter"].includes(chartType) && (							<div className="flex items-center gap-1 min-w-[120px]">
+								<span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+									Agg
+								</span>
+								<select
+									data-testid="aggregation-select"
+									value={aggregation}
+									onChange={(e) => setAggregation(e.target.value)}
+									className="input-field-compact"
+								>
+									<option value="SUM">Sum</option>
+									<option value="AVG">Average</option>
+									<option value="COUNT">Count</option>
+									<option value="MIN">Min</option>
+									<option value="MAX">Max</option>
+									<option value="MEDIAN">Median</option>
+									<option value="STDDEV">Std Dev</option>
+									<option value="P25">P25</option>
+									<option value="P75">P75</option>
+									<option value="P90">P90</option>
+								</select>
+							</div>
+						)}
+						{["line", "bar", "scatter"].includes(chartType) && (								<>
 									{renderMultiSelect({
 										id: "x-axis",
 										label: "X",
@@ -643,71 +691,51 @@ export default function DatasetViewer() {
 						data-testid="chart-section"
 						className="flex-1 min-h-0 relative rounded-2xl border border-gray-200 bg-white/80 overflow-hidden"
 					>
-						{data && selectedChart ? (
-							<div className="h-full">
-								<Chart data={data.data} chartConfig={selectedChart} />
+					{loadingData ? (
+						<div className="flex items-center justify-center h-full">
+							<div className="flex items-start gap-3">
+								<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+								<p className="text-gray-600">Loading data into DuckDB...</p>
 							</div>
-						) : (
-							<div className="text-left text-sm text-gray-500 p-3">
-								Select a chart configuration to get started.
-							</div>
-						)}
+						</div>
+					) : chartData && selectedChart ? (
+						<div className="h-full">
+							<Chart data={chartData} chartConfig={selectedChart} />
+						</div>
+					) : rowCount > 0 ? (
+						<div className="text-left text-sm text-gray-500 p-3">
+							Select a chart configuration to visualize {rowCount.toLocaleString()} rows.
+						</div>
+					) : (
+						<div className="text-left text-sm text-gray-500 p-3">
+							Select a chart configuration to get started.
+						</div>
+					)}
 
-						{data?.data?.length > 0 && (
-							<div
-								className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${showPreview ? "max-h-80" : "h-10"
-									}`}
+					{rowCount > 0 && (
+						<div
+							className={`absolute left-2 right-2 bottom-2 rounded-xl border border-gray-200 bg-white/95 shadow-lg transition-all duration-200 ${
+								showPreview ? "max-h-40" : "h-10"
+							}`}
+						>
+							<button
+								type="button"
+								onClick={() => setShowPreview((prev) => !prev)}
+								className="w-full h-10 flex items-center justify-between px-3 text-xs uppercase tracking-[0.2em] text-gray-600"
 							>
-								<button
-									type="button"
-									onClick={() => setShowPreview((prev) => !prev)}
-									className="w-full h-10 flex items-center justify-between px-3 text-xs uppercase tracking-[0.2em] text-gray-600"
-								>
-									<span>Data preview</span>
-									<span>{data.total?.toLocaleString()} rows</span>
-								</button>
-								{showPreview && (
-									<div className="max-h-[calc(20rem-2.5rem)] overflow-auto">
-										<table className="min-w-full divide-y divide-gray-200">
-											<thead className="bg-gray-50 sticky top-0">
-												<tr>
-													{Object.keys(data.data[0])
-														.slice(0, 6)
-														.map((key) => (
-															<th
-																key={key}
-																className="px-3 py-2 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider"
-															>
-																{key}
-															</th>
-														))}
-												</tr>
-											</thead>
-											<tbody className="bg-white divide-y divide-gray-200">
-												{data.data.slice(0, 10).map((row, index) => {
-													const rowEntries = Object.entries(row).slice(0, 6);
-													return (
-														<tr key={`${rowEntries[0]?.[1]}-${index}`}>
-															{rowEntries.map(([key, value]) => (
-																<td
-																	key={key}
-																	className="px-3 py-2 whitespace-nowrap text-xs text-gray-700"
-																>
-																	{value}
-																</td>
-															))}
-														</tr>
-													);
-												})}
-											</tbody>
-										</table>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
-			</section>
+								<span>DuckDB Dataset</span>
+								<span>{rowCount.toLocaleString()} rows loaded</span>
+							</button>
+							{showPreview && (
+								<div className="px-3 pb-2 text-xs text-gray-600">
+									Data loaded into client-side DuckDB. Filters and aggregations run instantly via SQL.
+								</div>
+							)}
+						</div>
+					)}
+			</div>
 		</div>
-	);
+	</section>
+</div>
+);
 }

@@ -12,19 +12,51 @@ test.describe("dataset coverage (headless)", () => {
 		page,
 		request,
 	}) => {
+		// Listen for console errors
+		page.on('console', msg => {
+			if (msg.type() === 'error') {
+				console.log('Browser console error:', msg.text());
+			}
+		});
+		
+		// Listen for page errors
+		page.on('pageerror', error => {
+			console.log('Page error:', error.message);
+		});
+		
 		await ensureApiReady(request);
 		await page.goto("/datasets", { waitUntil: "domcontentloaded" });
 		await page.getByTestId("datasets-title").waitFor({ timeout: 30000 });
 
 		const datasetCards = page.getByTestId("dataset-card");
 		await expect(datasetCards.first()).toBeVisible({ timeout: 30000 });
-		await datasetCards.first().click();
+	
+	// Click and wait for navigation
+	await Promise.all([
+		page.waitForURL(/\/datasets\/[^/]+$/),
+		datasetCards.first().click(),
+	]);
+	
+	// Wait for dataset viewer to render instead of network idle
+	// (DuckDB loading 100K rows may take time and prevent network idle)
+	await page.getByTestId("dataset-select").waitFor({ timeout: 60000 });
 
-		const datasetSelect = page.getByTestId("dataset-select");
-		await expect(datasetSelect).toBeVisible();
+	// Debug: Check what's on the page
+	const bodyText = await page.textContent("body");
+	console.log("Page content:", bodyText.substring(0, 500));
+	
+	// Check if there's an error message
+	const errorElement = page.locator("text=Error:");
+	if (await errorElement.count() > 0) {
+		const errorText = await errorElement.textContent();
+		console.log("Error found on page:", errorText);
+	}
 
-		const chartTypeSelect = page.getByTestId("chart-type-select");
-		await expect(chartTypeSelect).toBeVisible();
+	const datasetSelect = page.getByTestId("dataset-select");
+	await expect(datasetSelect).toBeVisible({ timeout: 30000 });
+
+	const chartTypeSelect = page.getByTestId("chart-type-select");
+	await expect(chartTypeSelect).toBeVisible();
 
 		const datasetOptions = datasetSelect.locator("option");
 		const datasetCount = await datasetOptions.count();

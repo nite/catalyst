@@ -35,6 +35,125 @@ export default function Chart({ data, chartConfig }) {
 
 		const { chart_type, x_axis, y_axis, category, value, color_by } =
 			chartConfig;
+		
+		const palette = [
+			"#14b8a6",
+			"#06b6d4",
+			"#3b82f6",
+			"#6366f1",
+			"#8b5cf6",
+			"#ec4899",
+			"#f97316",
+			"#eab308",
+			"#22c55e",
+		];
+
+		// Check if data is pre-aggregated from DuckDB (has x_label, y_value fields)
+		const isPreAggregated = data.length > 0 && 'x_label' in data[0] && 'y_value' in data[0];
+
+		// For line/bar charts with pre-aggregated data from DuckDB
+		if ((chart_type === "line" || chart_type === "bar") && isPreAggregated) {
+			// Check if we have grouping (group_by field)
+			const hasGrouping = data.length > 0 && 'group_by' in data[0];
+
+			if (hasGrouping) {
+				// Group data by group_by value
+				const grouped = new Map();
+				data.forEach(row => {
+					const group = row.group_by ?? "Other";
+					if (!grouped.has(group)) {
+						grouped.set(group, []);
+					}
+					grouped.get(group).push(row);
+				});
+
+				// Extract unique labels (x_label values)
+				const labels = [...new Set(data.map(row => row.x_label))].sort();
+
+				// Create datasets for each group
+				const datasets = Array.from(grouped.entries()).map(([group, rows], index) => {
+					// Build data array matching labels
+					const dataMap = new Map(rows.map(r => [r.x_label, r.y_value]));
+					const yKey = Array.isArray(y_axis) ? y_axis[0] : y_axis;
+					
+					return {
+						label: `${yKey} · ${group}`,
+						data: labels.map(label => dataMap.get(label) ?? 0),
+						borderColor: palette[index % palette.length],
+						backgroundColor:
+							chart_type === "bar"
+								? `${palette[index % palette.length]}cc`
+								: `${palette[index % palette.length]}22`,
+						borderWidth: 2,
+						fill: chart_type === "line",
+						tension: 0.35,
+					};
+				});
+
+				return { labels, datasets };
+			} else {
+				// No grouping - single dataset
+				const labels = data.map(row => row.x_label);
+				const values = data.map(row => row.y_value);
+				const yKey = Array.isArray(y_axis) ? y_axis[0] : y_axis;
+
+				return {
+					labels,
+					datasets: [{
+						label: yKey,
+						data: values,
+						borderColor: palette[0],
+						backgroundColor:
+							chart_type === "bar"
+								? `${palette[0]}cc`
+								: `${palette[0]}22`,
+						borderWidth: 2,
+						fill: chart_type === "line",
+						tension: 0.35,
+					}]
+				};
+			}
+		}
+
+		// For scatter with pre-aggregated data (though scatter typically doesn't aggregate)
+		if (chart_type === "scatter" && isPreAggregated) {
+			const hasGrouping = data.length > 0 && 'group_by' in data[0];
+			
+			if (hasGrouping) {
+				const grouped = new Map();
+				data.forEach(row => {
+					const group = row.group_by ?? "Other";
+					if (!grouped.has(group)) {
+						grouped.set(group, []);
+					}
+					grouped.get(group).push({ x: row.x_label, y: row.y_value });
+				});
+
+				return {
+					datasets: Array.from(grouped.entries()).map(([group, points], index) => ({
+						label: group,
+						data: points,
+						backgroundColor: `${palette[index % palette.length]}66`,
+						borderColor: palette[index % palette.length],
+						borderWidth: 1,
+					})),
+				};
+			}
+
+			return {
+				datasets: [{
+					label: 'Data',
+					data: data.map(row => ({ x: row.x_label, y: row.y_value })),
+					backgroundColor: `${palette[0]}66`,
+					borderColor: palette[0],
+					borderWidth: 1,
+				}]
+			};
+		}
+
+		// Fallback for raw data (treemap, map, or when DuckDB not used)
+		// This handles legacy cases and chart types that don't use SQL aggregation
+
 		const xAxisKeys = Array.isArray(x_axis)
 			? x_axis.filter(Boolean)
 			: x_axis
@@ -51,99 +170,8 @@ export default function Chart({ data, chartConfig }) {
 				? [color_by]
 				: [];
 		const colorKey = colorKeys[0] || null;
-		const palette = [
-			"#14b8a6",
-			"#06b6d4",
-			"#3b82f6",
-			"#6366f1",
-			"#8b5cf6",
-			"#ec4899",
-			"#f97316",
-			"#eab308",
-			"#22c55e",
-		];
 
-		const buildLabels = (rows, key) => {
-			const seen = new Set();
-			const labels = [];
-			rows.forEach((row) => {
-				const label = row[key];
-				if (label === undefined || label === null || seen.has(label)) {
-					return;
-				}
-				seen.add(label);
-				labels.push(label);
-			});
-			return labels.slice(0, 50);
-		};
-
-		const aggregateSeries = (rows, xKey, yKey, groupKey) => {
-			const labels = buildLabels(rows, xKey);
-			const grouped = new Map();
-			rows.forEach((row) => {
-				const label = row[xKey];
-				if (label === undefined || label === null) return;
-				const group = groupKey ? (row[groupKey] ?? "Other") : "All";
-				const numericValue = Number(row[yKey]);
-				const valueToAdd = Number.isFinite(numericValue) ? numericValue : 1;
-				if (!grouped.has(group)) {
-					grouped.set(group, new Map());
-				}
-				const groupMap = grouped.get(group);
-				groupMap.set(label, (groupMap.get(label) || 0) + valueToAdd);
-			});
-
-			const datasets = Array.from(grouped.entries()).map(
-				([group, map], index) => ({
-					label: groupKey ? `${yKey} · ${group}` : yKey,
-					data: labels.map((label) => map.get(label) ?? 0),
-					borderColor: palette[index % palette.length],
-					backgroundColor:
-						chart_type === "bar"
-							? `${palette[index % palette.length]}cc`
-							: `${palette[index % palette.length]}22`,
-					borderWidth: 2,
-					fill: chart_type === "line",
-					tension: 0.35,
-				}),
-			);
-
-			return { labels, datasets };
-		};
-
-		// Prepare data based on chart type
-		if (chart_type === "line" || chart_type === "bar") {
-			const xKey = xAxisKeys[0];
-			if (!xKey || yAxisKeys.length === 0) return null;
-			const primaryY = yAxisKeys[0];
-
-			if (colorKey) {
-				return aggregateSeries(data, xKey, primaryY, colorKey);
-			}
-
-			const labels = buildLabels(data, xKey);
-			const datasets = yAxisKeys.map((yKey, index) => {
-				const series = aggregateSeries(data, xKey, yKey, null);
-				return {
-					label: yKey,
-					data: series.labels.map((_label, labelIndex) => {
-						const value = series.datasets[0]?.data?.[labelIndex];
-						return Number.isFinite(value) ? value : 0;
-					}),
-					borderColor: palette[index % palette.length],
-					backgroundColor:
-						chart_type === "bar"
-							? `${palette[index % palette.length]}cc`
-							: `${palette[index % palette.length]}22`,
-					borderWidth: 2,
-					fill: chart_type === "line",
-					tension: 0.35,
-				};
-			});
-
-			return { labels, datasets };
-		}
-
+		// For treemap (uses raw data)
 		if (chart_type === "treemap") {
 			return {
 				datasets: [
@@ -163,6 +191,7 @@ export default function Chart({ data, chartConfig }) {
 			};
 		}
 
+		// For map (uses raw data with manual aggregation)
 		if (chart_type === "map") {
 			const aggregated = {};
 			data.forEach((row) => {
@@ -190,7 +219,8 @@ export default function Chart({ data, chartConfig }) {
 			};
 		}
 
-		if (chart_type === "scatter") {
+		// For scatter without aggregation (raw x/y data)
+		if (chart_type === "scatter" && !isPreAggregated) {
 			const xKey = xAxisKeys[0];
 			if (!xKey || yAxisKeys.length === 0) return null;
 
