@@ -203,11 +203,50 @@ npm test
 5. **Chart Types**: Switch between different chart types
 6. **Mobile Responsive**: Test on different screen sizes
 
-## 🚢 Deployment to Render
+## 🚢 Deployment
+
+Catalyst supports deployment to multiple platforms:
+
+### Deploy to Koyeb (Recommended)
+
+**One-Click Deploy:**
+
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=docker&repository=github.com/nite/catalyst&branch=main&name=catalyst)
+
+**Manual Deployment:**
+
+```bash
+# Using the deployment script
+./deploy-koyeb.sh
+
+# Or deploy via Koyeb CLI
+koyeb service create catalyst-app \
+  --app catalyst \
+  --git github.com/nite/catalyst \
+  --git-branch main \
+  --git-builder docker \
+  --ports 8000:http \
+  --routes /:8000 \
+  --instance-type nano \
+  --env PORT=8000 \
+  --health-checks http:8000:/health
+```
+
+See [KOYEB_DEPLOYMENT.md](KOYEB_DEPLOYMENT.md) for complete deployment guide.
+
+**Benefits:**
+- ✅ Global edge network
+- ✅ Auto-scaling
+- ✅ Free tier available
+- ✅ Docker-based deployment
+- ✅ Zero-downtime deployments
+- ✅ Built-in SSL certificates
+
+### Deploy to Render
 
 The project includes a `render.yaml` configuration for easy deployment to Render.
 
-### Deployment Steps
+**Deployment Steps:**
 
 1. **Connect GitHub Repository** to Render
 2. **Create Blueprint** from `render.yaml`
@@ -217,12 +256,16 @@ The project includes a `render.yaml` configuration for easy deployment to Render
    - Set up environment variables
    - Configure CORS for web-api communication
 
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete Render deployment guide.
+
 ### Environment Variables
 
-The `render.yaml` automatically configures:
-- `VITE_API_URL` - API URL (auto-linked)
-- `PORT` - Service port
-- `PYTHON_VERSION` - Python version for api
+**For Koyeb and Render:**
+- `PORT` - Service port (default: 8000)
+- `PYTHON_VERSION` - Python version for api (default: 3.12)
+
+**Render only:**
+- `VITE_API_URL` - API URL (auto-linked from service)
 
 ### Dataset API Keys
 
@@ -273,6 +316,7 @@ Registration and docs pages:
 
 ### Deployment
 - **Render** - Cloud platform for hosting
+- **Koyeb** - Serverless platform for global deployment
 
 ## 📱 Mobile-First Features
 
