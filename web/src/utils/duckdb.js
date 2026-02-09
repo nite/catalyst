@@ -1,79 +1,38 @@
-import * as duckdb from "@duckdb/duckdb-wasm";
-import * as arrow from "apache-arrow";
+import initSqlJs from "sql.js";
 
 let db = null;
-let conn = null;
+let SQL = null;
 
 /**
- * Initialize DuckDB WASM instance
+ * Initialize SQL.js database (SQLite in WebAssembly)
  */
 export async function initDuckDB() {
-	if (db) return { db, conn };
+	if (db) return { db };
 
 	try {
-		const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+		if (!SQL) {
+			SQL = await initSqlJs({
+				locateFile: (file) => `https://sql.js.org/dist/${file}`,
+			});
+		}
 
-		// Select a bundle based on browser support
-		const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
-
-		const worker_url = URL.createObjectURL(
-			new Blob([`importScripts("${bundle.mainWorker}");`], {
-				type: "text/javascript",
-			}),
-		);
-
-		const worker = new Worker(worker_url);
-		const logger = new duckdb.ConsoleLogger();
-		db = new duckdb.AsyncDuckDB(logger, worker);
-		await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-		URL.revokeObjectURL(worker_url);
-
-		conn = await db.connect();
-
-		console.log("DuckDB initialized successfully");
-		return { db, conn };
+		db = new SQL.Database();
+		console.log("SQL.js database initialized successfully");
+		return { db };
 	} catch (error) {
-		console.error("Failed to initialize DuckDB:", error);
+		console.error("Failed to initialize SQL.js:", error);
 		throw error;
 	}
 }
 
 /**
- * Get the current connection, initializing if necessary
+ * Get the current database, initializing if necessary
  */
 export async function getConnection() {
-	if (!conn) {
+	if (!db) {
 		await initDuckDB();
 	}
-	return conn;
-}
-
-/**
- * Load data into DuckDB from Arrow format
- * @param {string} tableName - Name of the table to create
- * @param {ArrayBuffer} arrowData - Arrow IPC data
- */
-export async function loadArrowData(tableName, arrowData) {
-	const connection = await getConnection();
-
-	try {
-		// Drop table if it exists
-		await connection.query(`DROP TABLE IF EXISTS ${tableName}`);
-
-		// Insert Arrow data
-		await db.registerFileBuffer(
-			`${tableName}.arrow`,
-			new Uint8Array(arrowData),
-		);
-		await connection.query(
-			`CREATE TABLE ${tableName} AS SELECT * FROM arrow_scan('${tableName}.arrow')`,
-		);
-
-		console.log(`Loaded data into table: ${tableName}`);
-	} catch (error) {
-		console.error(`Failed to load Arrow data into ${tableName}:`, error);
-		throw error;
-	}
+	return db;
 }
 
 /**
@@ -82,23 +41,45 @@ export async function loadArrowData(tableName, arrowData) {
  * @param {Array} jsonData - Array of objects
  */
 export async function loadJSONData(tableName, jsonData) {
-	const connection = await getConnection();
+	const database = await getConnection();
 
 	try {
 		// Drop table if it exists
-		await connection.query(`DROP TABLE IF EXISTS ${tableName}`);
+		try {
+			database.run(`DROP TABLE IF EXISTS ${tableName}`);
+		} catch (e) {
+			// Table might not exist, ignore
+		}
 
-		// Convert JSON to Arrow Table
-		const arrowTable = arrow.tableFromJSON(jsonData);
+		if (jsonData.length === 0) {
+			// Create empty table
+			database.run(`CREATE TABLE ${tableName} (placeholder TEXT)`);
+			console.log(`Created empty table: ${tableName}`);
+			return;
+		}
 
-		// Insert the table
-		await db.registerFileBuffer(
-			`${tableName}.arrow`,
-			arrow.tableToIPC(arrowTable),
-		);
-		await connection.query(
-			`CREATE TABLE ${tableName} AS SELECT * FROM arrow_scan('${tableName}.arrow')`,
-		);
+		// Infer schema from first row
+		const firstRow = jsonData[0];
+		const columns = Object.keys(firstRow);
+		const columnDefs = columns
+			.map((col) => `"${col}" TEXT`)
+			.join(", ");
+
+		// Create table
+		database.run(`CREATE TABLE ${tableName} (${columnDefs})`);
+
+		// Prepare insert statement
+		const placeholders = columns.map(() => "?").join(", ");
+		const insertSQL = `INSERT INTO ${tableName} VALUES (${placeholders})`;
+
+		// Insert all rows
+		for (const row of jsonData) {
+			const values = columns.map((col) => {
+				const val = row[col];
+				return val === null || val === undefined ? null : String(val);
+			});
+			database.run(insertSQL, values);
+		}
 
 		console.log(`Loaded ${jsonData.length} rows into table: ${tableName}`);
 	} catch (error) {
@@ -113,29 +94,26 @@ export async function loadJSONData(tableName, jsonData) {
  * @returns {Promise<Array>} Query results
  */
 export async function query(sql) {
-	const connection = await getConnection();
+	const database = await getConnection();
 
 	try {
-		const result = await connection.query(sql);
-		const rows = result.toArray().map((row) => row.toJSON());
-		return rows;
-	} catch (error) {
-		console.error("Query failed:", error);
-		throw error;
-	}
-}
+		const result = database.exec(sql);
 
-/**
- * Execute a SQL query and return results as Arrow Table
- * @param {string} sql - SQL query to execute
- * @returns {Promise<arrow.Table>} Query results as Arrow Table
- */
-export async function queryArrow(sql) {
-	const connection = await getConnection();
+		if (result.length === 0) {
+			return [];
+		}
 
-	try {
-		const result = await connection.query(sql);
-		return result;
+		const columns = result[0].columns;
+		const values = result[0].values;
+
+		// Convert to array of objects
+		return values.map((row) => {
+			const obj = {};
+			columns.forEach((col, idx) => {
+				obj[col] = row[idx];
+			});
+			return obj;
+		});
 	} catch (error) {
 		console.error("Query failed:", error);
 		throw error;
@@ -148,21 +126,21 @@ export async function queryArrow(sql) {
  * @returns {Promise<Array>} Array of column definitions
  */
 export async function getTableSchema(tableName) {
-	const sql = `DESCRIBE ${tableName}`;
-	return await query(sql);
+	const sql = `PRAGMA table_info(${tableName})`;
+	const result = await query(sql);
+	return result.map((row) => ({
+		column_name: row.name,
+		column_type: row.type,
+	}));
 }
 
 /**
- * Close the DuckDB connection
+ * Close the database connection
  */
 export async function closeDuckDB() {
-	if (conn) {
-		await conn.close();
-		conn = null;
-	}
 	if (db) {
-		await db.terminate();
+		db.close();
 		db = null;
 	}
-	console.log("DuckDB connection closed");
+	console.log("SQL.js database connection closed");
 }

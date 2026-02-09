@@ -10,7 +10,7 @@ import {
 import {
 	initDuckDB,
 	loadJSONData,
-	query as duckQuery,
+	query as sqlQuery,
 } from "../utils/duckdb";
 import Chart from "./Chart";
 import DataFilters from "./DataFilters";
@@ -124,11 +124,11 @@ export default function DatasetViewer() {
 			await loadJSONData("dataset", dataResponse.data);
 
 			// Get total row count
-			const countResult = await duckQuery("SELECT COUNT(*) as count FROM dataset");
+			const countResult = await sqlQuery("SELECT COUNT(*) as count FROM dataset");
 			setTotalRows(countResult[0]?.count || 0);
 
 			// Get small preview sample (only 10 rows for preview)
-			const preview = await duckQuery("SELECT * FROM dataset LIMIT 10");
+			const preview = await sqlQuery("SELECT * FROM dataset LIMIT 10");
 			setPreviewData(preview);
 
 			// Clear the raw data from memory - it's now in DuckDB
@@ -330,7 +330,7 @@ export default function DatasetViewer() {
 				if (chart_type === "treemap") {
 					// Aggregate by category
 					sql = `
-						SELECT "${category}", SUM(CAST("${value}" AS DOUBLE)) as "${value}"
+						SELECT "${category}", SUM(CAST("${value}" AS REAL)) as "${value}"
 						FROM dataset
 						WHERE "${category}" IS NOT NULL AND "${value}" IS NOT NULL
 						GROUP BY "${category}"
@@ -340,7 +340,7 @@ export default function DatasetViewer() {
 				} else if (chart_type === "map") {
 					// Aggregate by location
 					sql = `
-						SELECT "${location}", SUM(CAST("${value}" AS DOUBLE)) as "${value}"
+						SELECT "${location}", SUM(CAST("${value}" AS REAL)) as "${value}"
 						FROM dataset
 						WHERE "${location}" IS NOT NULL AND "${value}" IS NOT NULL
 						GROUP BY "${location}"
@@ -378,7 +378,7 @@ export default function DatasetViewer() {
 						// Group by X and color
 						const yKey = yKeys[0];
 						sql = `
-							SELECT "${xKey}", "${colorKey}", SUM(CAST("${yKey}" AS DOUBLE)) as "${yKey}"
+							SELECT "${xKey}", "${colorKey}", SUM(CAST("${yKey}" AS REAL)) as "${yKey}"
 							FROM dataset
 							WHERE "${xKey}" IS NOT NULL AND "${yKey}" IS NOT NULL
 							GROUP BY "${xKey}", "${colorKey}"
@@ -387,7 +387,7 @@ export default function DatasetViewer() {
 						`;
 					} else {
 						// Group by X only
-						const selectClauses = yKeys.map(yKey => `SUM(CAST("${yKey}" AS DOUBLE)) as "${yKey}"`).join(", ");
+						const selectClauses = yKeys.map(yKey => `SUM(CAST("${yKey}" AS REAL)) as "${yKey}"`).join(", ");
 						sql = `
 							SELECT "${xKey}", ${selectClauses}
 							FROM dataset
@@ -400,7 +400,7 @@ export default function DatasetViewer() {
 				}
 
 				if (sql) {
-					const result = await duckQuery(sql);
+					const result = await sqlQuery(sql);
 					setChartData(result);
 					console.log(`Queried ${result.length} rows for chart from DuckDB`);
 				}
