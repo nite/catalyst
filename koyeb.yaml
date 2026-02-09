@@ -1,0 +1,52 @@
+# Koyeb Service Configuration
+# Alternative to .koyeb/config.yaml - both work
+
+name: catalyst-app
+
+# Build configuration
+git:
+  repository: github.com/nite/catalyst
+  branch: main
+  builder: docker
+  dockerfile: Dockerfile
+
+# Service configuration
+type: web
+
+# Instance configuration
+instance_type: nano  # Free tier eligible
+
+# Port configuration
+ports:
+  - port: 8000
+    protocol: http
+
+# Routes
+routes:
+  - path: /
+    port: 8000
+
+# Health checks
+health_checks:
+  - http:
+      port: 8000
+      path: /health
+      initial_delay_seconds: 30
+      timeout_seconds: 5
+      period_seconds: 10
+
+# Environment variables
+env:
+  - name: PORT
+    value: "8000"
+
+# Scaling
+scaling:
+  min: 1
+  max: 1
+
+# Regions (optional, auto-selected if not specified)
+# regions:
+#   - was  # Washington (US East)
+#   - fra  # Frankfurt (EU)
+#   - sin  # Singapore (Asia)
