@@ -319,7 +319,7 @@ describe("DuckDB SQL Query Logic (using sql.js for testing)", () => {
 			FROM dataset
 			WHERE "date" IS NOT NULL AND "revenue" IS NOT NULL
 			GROUP BY "date", "category"
-			ORDER BY "date"
+			ORDER BY "date", "category"
 			LIMIT 500
 		`;
 

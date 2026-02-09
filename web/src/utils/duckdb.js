@@ -66,7 +66,7 @@ export async function loadArrowData(tableName, arrowData) {
 			new Uint8Array(arrowData),
 		);
 		await connection.query(
-			`CREATE TABLE ${tableName} AS SELECT * FROM read_parquet('${tableName}.arrow')`,
+			`CREATE TABLE ${tableName} AS SELECT * FROM arrow_scan('${tableName}.arrow')`,
 		);
 
 		console.log(`Loaded data into table: ${tableName}`);
