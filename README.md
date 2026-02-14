@@ -53,11 +53,14 @@ The frontend will be available at: http://localhost:3011
 
 ## Deployment
 
-Want to deploy Catalyst to production? Check out our comprehensive [Deployment Guide](DEPLOYMENT.md) which covers:
+**Quick Question: What's cheapest and what's best value?**
+- **Cheapest:** [Fly.io](https://fly.io) - $0/month (completely free)
+- **Best Value:** [Koyeb](https://www.koyeb.com) - $0-10/month (free tier + best features)
 
-- **Cost-effective options:** Koyeb, Render, Railway, Fly.io
-- **Cost comparison:** See detailed pricing for each platform
-- **Step-by-step guides:** Deploy to any platform in minutes
-- **Production configurations:** Optimized Dockerfiles and configurations
+Want to deploy Catalyst to production? Check out our guides:
 
-**Quick recommendation:** For the most cost-effective deployment, use [Koyeb](https://www.koyeb.com) (free tier) or [Fly.io](https://fly.io) - both offer generous free tiers perfect for small to medium applications, much cheaper than GKS or Azure.
+- **[Cost Guide](COST_GUIDE.md)** - Detailed comparison, decision trees, and real cost examples
+- **[Deployment Guide](DEPLOYMENT.md)** - Comprehensive deployment instructions for all platforms
+- **[Koyeb Quick Start](KOYEB.md)** - Deploy in 5 minutes (FREE)
+
+**Our recommendation:** Start with [Koyeb's free tier](https://www.koyeb.com) - it's free, easy to set up (5 minutes), and includes auto-scaling, HTTPS, and global CDN. Much cheaper than GKS ($70/mo) or Azure ($26/mo).

@@ -2,6 +2,21 @@
 
 This guide covers deploying Catalyst to various cloud platforms, with a focus on cost-effective alternatives to traditional cloud providers like GKS (Google Kubernetes Engine) and Azure.
 
+---
+
+## 🎯 Quick Answer: Cheapest vs Best Value
+
+**Looking for the short answer?**
+
+- **Cheapest:** [Fly.io](https://fly.io) - $0/month (free tier)
+- **Best Value:** [Koyeb](https://www.koyeb.com) - $0-10/month (free tier available, best features)
+
+**Want more details?** See our comprehensive [Cost Guide](COST_GUIDE.md) with decision trees, real examples, and recommendations.
+
+**Ready to deploy?** Jump to [Quick Start with Koyeb](#quick-start-with-koyeb) (5 minutes)
+
+---
+
 ## Table of Contents
 
 - [Cost Comparison](#cost-comparison)
@@ -19,15 +34,19 @@ Here's a comparison of monthly costs for running Catalyst (Backend + Frontend):
 
 | Platform | Backend (Node.js) | Frontend (Static/React) | Total/Month | Free Tier | Notes |
 |----------|------------------|------------------------|-------------|-----------|-------|
-| **Koyeb** | $0-5 | $0-5 | **$0-10** | ✅ 2 services | Auto-scaling, Docker support |
+| **Fly.io** 🏆 | $0-5 | $0 | **$0-5** | ✅ 3 VMs | **CHEAPEST** - Close to users, excellent performance |
+| **Koyeb** 💎 | $0-5 | $0-5 | **$0-10** | ✅ 2 services | **BEST VALUE** - Auto-scaling, Docker, easiest setup |
 | **Render** | $7 | $0 | **$7** | ✅ Static sites | Easy setup, good DX |
 | **Railway** | $5-10 | $0-5 | **$5-15** | ✅ $5 credit/mo | Great for prototypes |
-| **Fly.io** | $0-5 | $0 | **$0-5** | ✅ Generous free tier | Close to users, excellent performance |
 | **Azure App Service** | $13+ | $13+ | **$26+** | ❌ | Enterprise features |
-| **GKS (Kubernetes)** | $70+ | Included | **$70+** | ❌ | Cluster management overhead |
 | **AWS (ECS)** | $15+ | $1-5 | **$16+** | ⚠️ Limited | Complex setup |
+| **GKS (Kubernetes)** | $70+ | Included | **$70+** | ❌ | Cluster management overhead |
 
-**Winner for Cost:** Koyeb or Fly.io offer the best value for small to medium applications.
+**🏆 Cheapest:** Fly.io ($0-5/month)  
+**💎 Best Value:** Koyeb ($0-10/month) - Best balance of features, ease of use, and cost  
+**💰 Biggest Savings:** Both are 80-100% cheaper than GKS/Azure
+
+**Need help choosing?** See our detailed [Cost Guide](COST_GUIDE.md)
 
 ## Deployment Options
 
