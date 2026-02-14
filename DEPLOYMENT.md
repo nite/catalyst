@@ -52,7 +52,7 @@ Koyeb is an excellent choice for deploying Catalyst with its generous free tier 
    - Click "Create Service"
    - Select "GitHub" as source
    - Choose your repository
-   - Set build source: `backend/Dockerfile`
+   - Set build source: `backend/Dockerfile.prod`
    - Configure:
      ```
      Name: catalyst-backend
@@ -74,11 +74,11 @@ Koyeb is an excellent choice for deploying Catalyst with its generous free tier 
    - Click "Create Service"
    - Select "GitHub" as source
    - Choose your repository
-   - Set build source: `frontend/Dockerfile`
+   - Set build source: `frontend/Dockerfile.prod`
    - Configure:
      ```
      Name: catalyst-frontend
-     Port: 3011
+     Port: 80
      Instance Type: nano (free tier)
      ```
 
@@ -126,20 +126,28 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # SPA routing - redirect all requests to index.html
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    location /api {
-        proxy_pass ${VITE_API_URL};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 }
 ```
+
+**Note:** The frontend will connect to the backend using the `VITE_API_URL` environment variable configured at build time.
 
 #### Alternative: Using koyeb.yaml
 
