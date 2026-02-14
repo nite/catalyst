@@ -214,7 +214,7 @@ If you're asking "what's cheapest vs best value", here's my honest opinion:
 
 ### Avoid GKS/Azure/AWS unless you need them
 **Why not?**
-- 7-70x more expensive ($16-70 vs $0-10)
+- Much more expensive ($16-70 vs $0-10) - that's 1.6x to 7x higher cost
 - Complex setup (hours vs minutes)
 - Overkill for most projects
 - Only use if you need enterprise features
@@ -227,6 +227,9 @@ If you're asking "what's cheapest vs best value", here's my honest opinion:
 **Best Value:** Koyeb ($0-10/month)  
 **My Pick:** Start with Koyeb, switch to Fly.io if needed
 
-**Cost savings vs traditional cloud:** 80-100% cheaper ($0-10 vs $16-70)
+**Cost savings vs traditional cloud:** 
+- vs GKS ($70): Save $60-70/mo (86-100% cheaper)
+- vs Azure ($26): Save $16-26/mo (62-100% cheaper)
+- vs AWS ($16): Save $6-16/mo (38-100% cheaper)
 
 Ready to deploy? → [Start with Koyeb (5 min)](KOYEB.md)
