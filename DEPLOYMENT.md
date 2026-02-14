@@ -85,7 +85,6 @@ Koyeb is an excellent choice for deploying Catalyst with its generous free tier 
 2. **Environment Variables:**
    ```
    VITE_API_URL=https://catalyst-backend-yourname.koyeb.app
-   VITE_PORT=3011
    ```
 
 3. **Deploy**
@@ -171,7 +170,7 @@ services:
       - name: NODE_ENV
         value: production
     docker:
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.prod
 
   - name: catalyst-frontend
     git:
@@ -187,7 +186,7 @@ services:
       - name: VITE_API_URL
         value: https://catalyst-backend-yourname.koyeb.app
     docker:
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.prod
 ```
 
 ### Render
@@ -362,8 +361,8 @@ The fastest way to deploy Catalyst to Koyeb:
 # 2. Sign up at https://www.koyeb.com
 # 3. Click "Create Service" → "GitHub"
 # 4. Select this repository
-# 5. Deploy backend (backend/Dockerfile, port 8011)
-# 6. Deploy frontend (frontend/Dockerfile, port 80)
+# 5. Deploy backend (backend/Dockerfile.prod, port 8011)
+# 6. Deploy frontend (frontend/Dockerfile.prod, port 80)
 # 7. Update frontend's VITE_API_URL to point to backend
 # 8. Done! Both services running on free tier
 ```
