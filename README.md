@@ -50,3 +50,14 @@ The frontend will be available at: http://localhost:3011
 ### Frontend (.env)
 - `VITE_API_URL=http://localhost:8011` - Backend API URL
 - `VITE_PORT=3011` - Frontend development server port
+
+## Deployment
+
+Want to deploy Catalyst to production? Check out our comprehensive [Deployment Guide](DEPLOYMENT.md) which covers:
+
+- **Cost-effective options:** Koyeb, Render, Railway, Fly.io
+- **Cost comparison:** See detailed pricing for each platform
+- **Step-by-step guides:** Deploy to any platform in minutes
+- **Production configurations:** Optimized Dockerfiles and configurations
+
+**Quick recommendation:** For the most cost-effective deployment, use [Koyeb](https://www.koyeb.com) (free tier) or [Fly.io](https://fly.io) - both offer generous free tiers perfect for small to medium applications, much cheaper than GKS or Azure.
