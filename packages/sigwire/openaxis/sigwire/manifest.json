@@ -1,0 +1,36 @@
+{
+  "node_id": "sigwire",
+  "name": "Signal in the Wire",
+  "version": "0.1.0",
+  "description": "AI-ranked news aggregator with blog",
+  "category": "Intelligence",
+  "author": "openaxis-core",
+
+  "entry_points": {
+    "app": "openaxis.sigwire.app:app",
+    "frontend": "FeedView.tsx"
+  },
+
+  "dependencies": [],
+
+  "events": {
+    "emits": ["NEWS_FLASH", "ARTICLE_RANKED"],
+    "subscribes": []
+  },
+
+  "mcp": {
+    "tools": ["get_top_articles", "search_articles"],
+    "resources": ["openaxis://sigwire/trending"]
+  },
+
+  "permissions": {
+    "requires": [],
+    "grants": ["READ_ARTICLES"]
+  },
+
+  "database": {
+    "env_var": "SIGWIRE_DATABASE_URL"
+  },
+
+  "standalone": true
+}

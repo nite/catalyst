@@ -1,52 +1,46 @@
-# Catalyst
+# OpenAxis
 
-Mobile-first data visualization dashboard - explore and visualize open datasets anywhere
+**The Sovereign Agentic Platform** — composable libraries for building, connecting, and deploying intelligent web apps.
 
-## Architecture
+Import what you need. Run each piece standalone or together. No framework lock-in.
 
-- **Backend**: Node.js/Express API running on port **8011**
-- **Frontend**: React/Vite application running on port **3011**
+## What's Live
 
-## Quick Start
+### Signal in the Wire (SigWire) — `packages/sigwire/`
 
-### Using Docker Compose (Recommended)
-
-```bash
-docker-compose up
-```
-
-### Manual Setup
-
-#### Backend (Port 8011)
+AI-ranked news aggregator. Scrapes Hacker News and RSS feeds, scores articles with Claude, surfaces the best ones.
 
 ```bash
-cd backend
-npm install
-npm start
+cd packages/sigwire
+pip install -e .
+uvicorn openaxis.sigwire.app:app --port 8001
 ```
 
-The backend API will be available at: http://localhost:8011
+Then:
+- `GET /health` — health check
+- `POST /scrape` — trigger scrape + rank cycle
+- `GET /articles` — ranked articles (highest score first)
+- `GET /articles?min_score=7` — filter by minimum score
+- `POST /blog` — create a blog post
+- `GET /blog` — list published blog posts
 
-#### Frontend (Port 3011)
+## Stack
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend will be available at: http://localhost:3011
-
-## API Endpoints
-
-- `GET /health` - Health check
-- `GET /api/datasets` - List available datasets
+- **Backend**: FastAPI (Python), async everywhere
+- **DB**: SQLite (per-node, zero-config)
+- **LLM**: Anthropic Claude API
+- **Frontend**: React + Vite + Tailwind (Phase 2)
 
 ## Environment Variables
 
-### Backend (.env)
-- `PORT=8011` - Backend server port
+Copy `.env.example` and fill in your values:
 
-### Frontend (.env)
-- `VITE_API_URL=http://localhost:8011` - Backend API URL
-- `VITE_PORT=3011` - Frontend development server port
+```bash
+cp .env.example .env
+```
+
+Key vars: `SIGWIRE_DATABASE_URL`, `LLM_API_KEY`, `LLM_MODEL`
+
+## Architecture
+
+Each package is a standalone app ("Node"). Nodes talk via REST. No shared storage. No direct imports between Nodes. See `CLAUDE.md` for full coding rules.

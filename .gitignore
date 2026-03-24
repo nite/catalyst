@@ -3,3 +3,25 @@ dist
 .DS_Store
 *.log
 .env.local
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# SQLite
+*.db
+data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
