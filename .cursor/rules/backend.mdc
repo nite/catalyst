@@ -1,0 +1,45 @@
+---
+description: Python/FastAPI backend rules for Node development
+globs: packages/**/*.py,api/**/*.py
+alwaysApply: false
+---
+
+# OpenAxis — Backend Rules
+
+## Route Handlers
+- Use `async def` for ALL route handlers
+- Each Node creates its own FastAPI app in `app.py`
+- Use Pydantic models for all request/response schemas
+- Validate all inputs at API boundaries — no raw dicts in route handlers
+
+## Database
+- Each Node owns its own DB — never shared between Nodes
+- Use `from openaxis.core.db import create_db` to get an engine + session
+- Use parameterized queries — never string-interpolate SQL
+- Use `async with` for session management
+
+## Auth (when needed)
+- Use `Depends(get_current_user)` from `openaxis.core.auth`
+- All financial actions must go through the Constitutional Gatekeeper before execution
+
+## MCP Tools
+- Every data-fetching function should also be decorated as an MCP tool
+- Financial MCP tools must include "Requires human approval" in their docstring
+- Use `@mcp_tool()` and `@mcp_resource()` from `openaxis.core.mcp`
+
+## HTTP Clients
+- Use `httpx.AsyncClient` for cross-Node REST calls
+- Set timeouts — never fire-and-forget external HTTP calls without a timeout
+
+## File Size
+- No file over ~300 lines — split by concern (router.py, models.py, scraper.py, ranker.py, etc.)
+
+## Error Handling
+- Return structured error responses (Pydantic model), never raw strings
+- Never expose stack traces in production responses
+- Log actions via `openaxis.core.permissions.log_action` for audit trail
+
+## Security
+- Never store secrets in code — use env vars
+- Rate-limit public endpoints
+- Sanitize all external content before storing or returning
