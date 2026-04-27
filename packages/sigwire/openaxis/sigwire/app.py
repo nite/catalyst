@@ -9,6 +9,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from openaxis.sigwire.db import init_db
 from openaxis.sigwire.router import router
 
+# Import MCP tools so decorators run and register tools/resources.
+# This is a no-op if openaxis-core is not installed.
+try:
+    import openaxis.sigwire.mcp_tools  # noqa: F401 — side-effect import
+    from openaxis.core.mcp.router import create_mcp_router
+
+    _mcp_router = create_mcp_router()
+except ImportError:
+    _mcp_router = None
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -38,3 +48,6 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+if _mcp_router is not None:
+    app.include_router(_mcp_router)

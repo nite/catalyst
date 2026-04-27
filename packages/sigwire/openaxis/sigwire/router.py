@@ -5,7 +5,8 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select, desc
+from sqlalchemy import desc, func, or_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openaxis.sigwire.db import get_session
@@ -82,6 +83,7 @@ async def list_articles(
     """Return ranked articles, highest score first."""
     stmt = (
         select(Article)
+        .options(selectinload(Article.source))
         .where(Article.score_overall >= min_score)
         .order_by(desc(Article.score_overall))
         .offset(offset)
@@ -112,9 +114,44 @@ async def list_articles(
     return out
 
 
+@router.get("/articles/search", response_model=list[ArticleOut])
+async def search_articles(
+    q: str = Query(min_length=1),
+    limit: int = Query(default=20, le=100),
+    session: AsyncSession = Depends(get_session),
+):
+    """Keyword search across article titles and summaries."""
+    pattern = f"%{q.lower()}%"
+    stmt = (
+        select(Article)
+        .options(selectinload(Article.source))
+        .where(
+            or_(
+                func.lower(Article.title).like(pattern),
+                func.lower(Article.summary).like(pattern),
+            )
+        )
+        .order_by(desc(Article.score_overall))
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    articles = result.scalars().all()
+    out = []
+    for a in articles:
+        source_name = a.source.name if (a.source_id and a.source) else None
+        out.append(ArticleOut(
+            id=a.id, title=a.title, url=a.url, summary=a.summary,
+            score_technical=a.score_technical, score_market=a.score_market,
+            score_novelty=a.score_novelty, score_overall=a.score_overall,
+            llm_rationale=a.llm_rationale, source_name=source_name,
+            scraped_at=a.scraped_at, is_internal=a.is_internal,
+        ))
+    return out
+
+
 @router.get("/articles/{article_id}", response_model=ArticleOut)
 async def get_article(article_id: int, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Article).where(Article.id == article_id))
+    result = await session.execute(select(Article).options(selectinload(Article.source)).where(Article.id == article_id))
     article = result.scalar_one_or_none()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")

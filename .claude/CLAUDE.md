@@ -4,28 +4,32 @@
 
 ## Quick Reference
 
-- **Run SigWire**: `cd packages/sigwire && uvicorn openaxis.sigwire.app:app --port 8001`
+- **Run SigWire dev**: `cd packages/sigwire && make dev` (API :8001 + web :3000)
+- **Run SigWire API only**: `cd packages/sigwire && make api`
 - **Health check**: `curl http://localhost:8001/health`
-- **Run tests**: `cd packages/sigwire && python -m pytest tests/ -v`
-- **Lint**: `ruff check packages/`
-- **Format**: `ruff format packages/`
-- **Frontend dev**: `cd frontend && npm run dev`
+- **Run all tests**: `make test`
+- **Run SigWire tests**: `cd packages/sigwire && make test`
+- **Lint**: `uv run ruff check packages/`
+- **Format**: `uv run ruff format packages/`
 
 ## Architecture
 
-- Monorepo: each Node in `packages/{node_id}/` with its own `pyproject.toml`
-- Nodes are standalone FastAPI apps — never import across Nodes
-- Cross-Node communication via REST only
-- `openaxis-core` (future) provides shared auth, audit log, permissions
-- Each Node owns its own DB (or none)
+- **OpenAxis is a library, not a platform** — no central shell, no node registry
+- Monorepo: `packages/core/` (library) + `packages/sigwire/` (standalone app)
+- Each app has its own API, frontend, database, Makefile, Dockerfile
+- Cross-app communication via REST only — no shared imports, no shared DB
+- Directory structure supports splitting into separate repos later
+- Local dev is native (no Docker) — Docker is for deployment only
+
+## Current State
+
+- **Core** (`packages/core/`): Auth, MCP helpers, DB factory, permissions (15 tests)
+- **SigWire** (`packages/sigwire/`): AI-ranked news aggregator (10 tests)
+  - API: FastAPI backend with HN scraper, Claude ranker, blog posts
+  - Web: React 19 + Vite + Tailwind frontend at `packages/sigwire/web/`
+  - Ranking prompt: Customisable via `prompts/ranking.md` or `RANKING_PROMPT_FILE` env var
 
 ## Commit Convention
 
 Format: `{package}: {what changed}`
 Example: `sigwire: add Hacker News scraper`
-
-## Current State
-
-- **SigWire** (`packages/sigwire/`): News aggregator with HN scraper, AI ranker, FastAPI REST API
-- **Frontend** (`frontend/`): React 19 + Vite + Tailwind CSS shell (in progress)
-- **Legacy dirs** (`api/`, `backend/`): Old scaffolding, will be removed

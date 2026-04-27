@@ -13,7 +13,7 @@ HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
 RSS_FEEDS = [
     {"name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/", "type": "rss"},
-    {"name": "TLDR AI", "url": "https://tldr.tech/ai/rss", "type": "rss"},
+    {"name": "TLDR AI", "url": "https://tldr.tech/api/rss/ai", "type": "rss"},
     {"name": "Latent Space", "url": "https://www.latent.space/feed", "type": "rss"},
 ]
 

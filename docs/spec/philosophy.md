@@ -36,7 +36,7 @@ OpenAxis is **not** a framework. It's a set of libraries that compose.
 
 - **openaxis-core** — the shared library: auth, MCP helpers, permissions, config
 - **Node** — an independent app that optionally uses openaxis-core. Each Node is its own library/package.
-- **Shell** — the React frontend library that provides a UI shell for loading Nodes
+- **App** — an independent app that optionally uses openaxis-core. Each app has its own frontend.
 
 ---
 

@@ -1,4 +1,4 @@
-# Signal in the Wire (SigWire) — Node Spec
+# Signal in the Wire (SigWire)
 
 **Full name**: Signal in the Wire  
 **Short name**: SigWire  

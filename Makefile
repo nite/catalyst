@@ -1,28 +1,45 @@
-# Catalyst Makefile
+# OpenAxis Monorepo
 
-# Default ports, can be overridden with environment variables
-BACKEND_PORT ?= 8011
-FRONTEND_PORT ?= 3011
+.PHONY: dev test test-core test-sigwire lint fmt install help
 
-.PHONY: dev
-dev:
-	@echo "Starting Catalyst development environment..."
-	@echo "Backend port: $(BACKEND_PORT)"
-	@echo "Frontend port: $(FRONTEND_PORT)"
-	@echo ""
-	@echo "To customize ports, use:"
-	@echo "  BACKEND_PORT=8080 FRONTEND_PORT=3000 make dev"
-	@echo ""
-	@echo "Backend will be available at: http://localhost:$(BACKEND_PORT)"
-	@echo "Frontend will be available at: http://localhost:$(FRONTEND_PORT)"
+# ── Development ────────────────────────────────────────────────────────────
 
-.PHONY: help
-help:
-	@echo "Catalyst Development Commands"
-	@echo ""
-	@echo "  make dev          - Start development environment"
-	@echo "                      Default ports: Backend=8011, Frontend=3011"
-	@echo ""
-	@echo "Environment variables:"
-	@echo "  BACKEND_PORT      - Override backend port (default: 8011)"
-	@echo "  FRONTEND_PORT     - Override frontend port (default: 3011)"
+dev: ## Run SigWire API + web dev servers
+	cd packages/sigwire && $(MAKE) dev
+
+# ── Install ────────────────────────────────────────────────────────────────
+
+install: ## Install all Python and Node dependencies
+	uv sync --all-packages --all-extras
+	cd packages/sigwire/web && npm install
+
+# ── Tests ──────────────────────────────────────────────────────────────────
+
+test: test-core test-sigwire ## Run all tests
+
+test-core: ## Run openaxis-core tests
+	cd packages/core && $(MAKE) test
+
+test-sigwire: ## Run openaxis-sigwire tests
+	cd packages/sigwire && $(MAKE) test
+
+# ── Quality ────────────────────────────────────────────────────────────────
+
+lint: ## Lint all Python packages with ruff
+	uv run ruff check packages/
+
+fmt: ## Format all Python packages with ruff
+	uv run ruff format packages/
+
+# ── Scratch ────────────────────────────────────────────────────────────────
+
+scrape: ## Trigger a SigWire scrape (requires SigWire running)
+	curl -s -X POST http://localhost:8001/scrape | python3 -m json.tool
+
+health: ## Check SigWire health
+	curl -s http://localhost:8001/health | python3 -m json.tool
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+

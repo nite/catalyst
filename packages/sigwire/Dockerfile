@@ -1,11 +1,16 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy package files
 COPY pyproject.toml .
 COPY openaxis/ openaxis/
+COPY prompts/ prompts/
 
-RUN pip install --no-cache-dir -e .
+# Install sigwire and all its dependencies
+RUN uv pip install --system --no-cache -e .
 
 RUN mkdir -p /app/data
 

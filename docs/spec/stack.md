@@ -9,7 +9,7 @@
 | **Cache / Event Bus** | Redis (Phase 5+) | Pub/sub for inter-Node events — not needed for launch which uses REST |
 | **Secrets** | Environment variables (MVP) → HashiCorp Vault (production) | Pragmatic security escalation |
 | **LLM** | Anthropic Claude API (`claude-sonnet-4-20250514`) | Article ranking, trade thesis generation, chart suggestions |
-| **State Management** | Zustand (frontend) | Lightweight shared state across Nodes |
+| **State Management** | TanStack Query (frontend) | Caching, background refetch, loading states |
 | **Data Fetching** | TanStack Query (frontend) | Caching, background refetch, loading states |
 
 ## What We're NOT Using (Yet)

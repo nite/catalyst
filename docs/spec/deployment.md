@@ -36,10 +36,10 @@ services:
         sync: false
 
   - type: web
-    name: openaxis-shell
+    name: sigwire-web
     runtime: static
-    buildCommand: cd packages/shell && npm ci && npm run build
-    staticPublishPath: packages/shell/dist
+    buildCommand: cd packages/sigwire/web && npm ci && npm run build
+    staticPublishPath: packages/sigwire/web/dist
     routes:
       - type: rewrite
         source: /*
@@ -92,7 +92,7 @@ SIGWIRE_DATABASE_URL=sqlite+aiosqlite:///sigwire.db LLM_API_KEY=sk-ant-... \
 - JWT-based auth with access + refresh tokens, OAuth2 (Google, GitHub), API keys
 - RBAC: `admin`, `user`, `viewer`, `api_consumer`
 - Nodes declare `requires`/`grants` in manifest; Permission Proxy enforces at API level
-- Every cross-Node call and financial action is logged in Core's audit table
+- Every cross-app call and financial action is logged in Core's audit table
 - Never store secrets in code — use env vars
-- All cross-Node data access via REST only, never shared DB
+- All cross-app data access via REST only, never shared DB
 - AI-proposed financial actions always require human approval

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     )
     llm_api_key: str = Field(default="", alias="LLM_API_KEY")
     llm_model: str = Field(default="claude-sonnet-4-20250514", alias="LLM_MODEL")
+    ranking_prompt_file: str = Field(default="", alias="RANKING_PROMPT_FILE")
     scrape_interval_minutes: int = Field(default=15, alias="SCRAPE_INTERVAL_MINUTES")
     hn_enabled: bool = Field(default=True, alias="HN_ENABLED")
     environment: str = Field(default="development", alias="ENVIRONMENT")

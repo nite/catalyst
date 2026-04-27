@@ -2,6 +2,7 @@
 
 import json
 import logging
+from pathlib import Path
 
 import anthropic
 
@@ -9,7 +10,10 @@ from openaxis.sigwire.config import settings
 
 logger = logging.getLogger(__name__)
 
-RANKING_PROMPT = """You are a senior AI/software engineer and financial analyst. Score each article 1-10 on three dimensions:
+_DEFAULT_PROMPT_PATH = Path(__file__).resolve().parent.parent.parent.parent / "prompts" / "ranking.md"
+
+_FALLBACK_PROMPT = """\
+You are a senior AI/software engineer and financial analyst. Score each article 1-10 on three dimensions:
 
 1. Technical Depth — does it contain implementation details, code, or architecture?
 2. Market Impact — could this move a stock, sector, or funding round?
@@ -24,6 +28,23 @@ Weighting rules:
 Return ONLY valid JSON array:
 [{"title": "...", "url": "...", "score_technical": N, "score_market": N,
   "score_novelty": N, "score_overall": N, "rationale": "..."}]"""
+
+
+def _load_ranking_prompt() -> str:
+    """Load the ranking prompt from a configurable file, falling back to the bundled default."""
+    # 1. Explicit env var path
+    if settings.ranking_prompt_file:
+        path = Path(settings.ranking_prompt_file)
+        if path.is_file():
+            return path.read_text().strip()
+        logger.warning("RANKING_PROMPT_FILE=%s not found — using default", path)
+
+    # 2. Bundled prompts/ranking.md next to the package
+    if _DEFAULT_PROMPT_PATH.is_file():
+        return _DEFAULT_PROMPT_PATH.read_text().strip()
+
+    # 3. Hardcoded fallback
+    return _FALLBACK_PROMPT
 
 
 async def rank_articles(articles: list[dict]) -> list[dict]:
@@ -44,6 +65,7 @@ async def rank_articles(articles: list[dict]) -> list[dict]:
     )
 
     try:
+        prompt = _load_ranking_prompt()
         client = anthropic.AsyncAnthropic(api_key=settings.llm_api_key)
         message = await client.messages.create(
             model=settings.llm_model,
@@ -51,7 +73,7 @@ async def rank_articles(articles: list[dict]) -> list[dict]:
             messages=[
                 {
                     "role": "user",
-                    "content": f"{RANKING_PROMPT}\n\nArticles to score:\n{article_text}",
+                    "content": f"{prompt}\n\nArticles to score:\n{article_text}",
                 }
             ],
         )
