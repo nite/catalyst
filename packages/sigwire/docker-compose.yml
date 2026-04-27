@@ -1,26 +1,23 @@
-# Root convenience — delegates to per-package compose files.
-# For production: cd packages/sigwire && docker compose up
-
 services:
-  sigwire-api:
+  api:
     build:
-      context: ./packages/sigwire
+      context: .
       dockerfile: Dockerfile
     ports:
       - "8001:8001"
-    env_file: .env
+    env_file: ../../.env
     volumes:
       - sigwire-data:/app/data
 
-  sigwire-web:
+  web:
     build:
-      context: ./packages/sigwire/web
+      context: ./web
       args:
         VITE_API_URL: http://localhost:8001
     ports:
       - "3000:80"
     depends_on:
-      - sigwire-api
+      - api
 
 volumes:
   sigwire-data:

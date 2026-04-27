@@ -1,0 +1,9 @@
+# OpenAxis — Cursor Rules
+#
+# Scoped rules (auto-loaded per file type) are in .cursor/rules/:
+#   core.mdc      — architecture rules (always loaded)
+#   backend.mdc   — Python/FastAPI rules (packages/**/*.py)
+#   frontend.mdc  — React/Vite/Tailwind rules (frontend/**/*.{jsx,tsx,...})
+#   security.mdc  — security rules (always loaded)
+#
+# Full spec: docs/openaxis-build-spec.md → docs/spec/

@@ -1,0 +1,35 @@
+---
+description: Core architecture rules — always loaded
+globs: 
+alwaysApply: true
+---
+
+# OpenAxis — Architecture Rules
+
+## Fundamentals
+- OpenAxis is a set of composable **libraries**, not a framework
+- Each Node lives in `packages/{node_id}/` with its own `pyproject.toml`
+- Nodes are standalone FastAPI apps — never import across Nodes
+- Cross-Node communication via REST only, never shared DB
+- Nodes MAY import from `openaxis-core` (optional dependency)
+
+## Required Files Per Node
+Each Node must have: `app.py`, `router.py`, `models.py`, `config.py`, `manifest.json`
+
+## Hard Rules
+1. Each Node is its own package — standalone installable
+2. Nodes talk via REST or MCP — never direct imports
+3. If a Node has storage, it owns that storage exclusively
+4. Every Node has a `GET /health` endpoint
+5. Config comes from environment variables only
+6. No file over ~300 lines — split by concern
+7. Commit format: `{package}: {what changed}`
+
+## Stack
+- Backend: FastAPI (Python), async everywhere, SQLAlchemy
+- Frontend: React 19 + Vite + Tailwind CSS
+- LLM: Anthropic Claude API (`claude-sonnet-4-20250514`)
+- State: TanStack Query (API calls) + Zustand (cross-Node state)
+
+## Full Spec
+See `docs/openaxis-build-spec.md` and `docs/spec/` for complete reference.

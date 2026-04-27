@@ -1,0 +1,21 @@
+{
+  "id": "sigwire",
+  "name": "Signal in the Wire",
+  "version": "0.1.0",
+  "description": "AI-ranked news aggregator with blog",
+  "category": "Intelligence",
+
+  "entry_points": {
+    "api": "openaxis.sigwire.app:app",
+    "web": "web/"
+  },
+
+  "mcp": {
+    "tools": ["get_top_articles", "search_articles"],
+    "resources": ["openaxis://sigwire/trending"]
+  },
+
+  "database": {
+    "env_var": "SIGWIRE_DATABASE_URL"
+  }
+}

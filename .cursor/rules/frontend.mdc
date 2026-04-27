@@ -1,0 +1,44 @@
+---
+description: React/Vite/Tailwind frontend rules for Node UI development
+globs: frontend/**/*.{jsx,tsx,js,ts,css},web/**/*.{jsx,tsx,js,ts,css}
+alwaysApply: false
+---
+
+# OpenAxis — Frontend Rules
+
+## Component Structure
+- Wrap ALL Node views in `<NodeWrapper>` — provides security and theme framing
+- Keep components focused — split into smaller components when a file exceeds ~200 lines
+
+## Styling
+- Tailwind utilities ONLY — no custom CSS files
+- Dark mode palette:
+  - Background: `gray-950` / Surface: `gray-900` / Borders: `gray-800`
+  - Text: `gray-100` primary, `gray-400` secondary, `gray-500` muted
+  - Accent: `orange-500` (internal), `blue-500` (external), `green-500` (safe), `red-500` (danger)
+- Cards: `rounded-lg border border-gray-800`
+
+## Responsive Design
+- Mobile-first: default styles are mobile, use `md:` and `lg:` for larger screens
+- Feed views: single-column (max-w-xl centered), stacked on mobile
+
+## Data Fetching
+- Use TanStack Query for ALL API calls — no bare `fetch()` in components
+- Use Zustand store for cross-Node shared state (e.g., `currentFocus` ticker)
+
+## State
+```typescript
+// Cross-Node shared state — set in SigWire, read in Trader
+interface AxisState {
+  currentFocus: string | null;  // e.g. "NVDA"
+  user: User | null;
+}
+```
+
+## Node Registry
+- Register new Nodes in `registry.ts` with `id`, `name`, `apiUrl`, and `component`
+- Use dynamic imports for Node components (lazy loading)
+
+## Security
+- Never expose API keys in frontend code — all secrets via env vars (VITE_ prefix)
+- Sanitize user-generated content before rendering (avoid `dangerouslySetInnerHTML`)

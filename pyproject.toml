@@ -1,0 +1,8 @@
+[tool.uv.workspace]
+members = ["packages/core", "packages/sigwire"]
+
+[tool.uv.sources]
+openaxis-core = { workspace = true }
+
+[tool.uv]
+dev-dependencies = []
